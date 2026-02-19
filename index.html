@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认知灵活性实验室 v10.4 (Custom Edition)</title>
+    <style>
+        :root {
+            --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --warning: #f39c12; --error: #e74c3c;
+            --bg: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0; --panel-bg: #252525;
+        }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; transition: 0.3s; }
+        
+        /* 专注模式 */
+        body.focus-mode .container { border: 1px solid #333; box-shadow: none; }
+        body.focus-mode .right-panel { display: none; }
+        body.focus-mode .game-grid { grid-template-columns: 1fr; } 
+        body.focus-mode header { opacity: 0.2; }
+        body.focus-mode #exitFocusHint { display: block; }
+
+        .container { width: 100%; max-width: 1200px; background: var(--card-bg); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); overflow: hidden; display: flex; flex-direction: column; position: relative; border: 1px solid #333; }
+        
+        #exitFocusHint { display: none; position: absolute; top: 10px; right: 10px; font-size: 0.8rem; color: #666; border: 1px solid #444; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+
+        header { background: #1a1a1a; padding: 15px 25px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; font-size: 1.4rem; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .badge { background: var(--accent); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; letter-spacing: 1px; }
+
+        .game-grid { display: grid; grid-template-columns: 2fr 1.1fr; gap: 0; min-height: 650px; transition: 0.3s; }
+        @media (max-width: 900px) { .game-grid { grid-template-columns: 1fr; } }
+        
+        .left-panel { padding: 25px; border-right: 1px solid #333; display: flex; flex-direction: column; position: relative; }
+        .right-panel { background: var(--panel-bg); padding: 25px; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #333; transition: 0.3s; }
+
+        .control-bar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #333; }
+        
+        button { cursor: pointer; border: none; outline: none; border-radius: 6px; transition: 0.2s; font-weight: 600; font-size: 0.9rem; padding: 8px 16px; }
+        .btn-start { background: var(--success); color: white; } .btn-start:hover { background: #219150; }
+        .btn-verify { background: #8e44ad; color: white; opacity: 0.3; pointer-events: none; transition: 0.3s; } 
+        .btn-verify.active { opacity: 1; pointer-events: auto; box-shadow: 0 0 15px rgba(142, 68, 173, 0.4); transform: scale(1.05); }
+        .btn-outline { background: transparent; border: 1px solid #555; color: #ccc; } .btn-outline:hover { border-color: #aaa; color: #fff; }
+        
+        /* 卡牌区域 */
+        .sec-title { font-size: 0.8rem; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; }
+        .opt-btn { padding: 12px; border: 1px solid #444; background: #2a2a2a; color: #aaa; border-radius: 8px; min-width: 50px; font-size: 1rem; }
+        .opt-btn.active { border-color: var(--accent); color: white; background: #2980b9; }
+        .opt-btn.red.active { background: var(--error); border-color: var(--error); }
+        .opt-btn.black.active { background: #eee; color: #000; border-color: #fff; }
+
+        #autoCardArea { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 320px; transition: 0.3s; }
+        .auto-card { 
+            width: 220px; height: 320px; background: #fff; border-radius: 16px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.4); transition: 0.3s;
+        }
+        .auto-card.red { color: #c0392b; background: #fff5f5; } .auto-card.black { color: #2c3e50; background: #fdfefe; }
+        .card-suit { font-size: 7rem; line-height: 1; } .card-rank { font-size: 3.5rem; font-weight: bold; }
+        .card-ctx { position: absolute; top: 15px; font-size: 0.9rem; color: #999; font-weight: bold; } 
+
+        .play-area { display: flex; gap: 20px; margin-top: auto; padding-top:20px; }
+        .drop-zone { flex: 1; height: 120px; border: 2px dashed #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #888; cursor: pointer; transition: 0.2s; position: relative; }
+        .drop-zone:hover { border-color: var(--accent); color: var(--accent); background: rgba(52, 152, 219, 0.1); }
+        .drop-zone .key-hint { position: absolute; bottom: 8px; right: 10px; font-size: 0.7rem; opacity: 0.5; border: 1px solid #666; padding: 2px 6px; border-radius: 4px; }
+
+        /* 状态与日志 */
+        .status-panel { background: #1a1a1a; padding: 15px; border-radius: 10px; border: 1px solid #333; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #aaa; }
+        .stat-val { font-weight: bold; color: #fff; }
+        .diff-bar-bg { height: 4px; background: #444; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+        .diff-bar-fill { height: 100%; background: linear-gradient(90deg, #27ae60, #f39c12, #e74c3c); width: 0%; transition: 0.5s; }
+
+        .log-box { flex: 1; background: #1a1a1a; border-radius: 10px; padding: 10px; overflow-y: auto; max-height: 300px; font-size: 0.85rem; border: 1px solid #333; font-family: monospace; }
+        .log-item { padding: 6px 0; border-bottom: 1px dashed #333; display: flex; align-items: center; gap: 8px; color: #ccc; }
+        
+        /* 弹窗 */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-content { background: #2d2d2d; padding: 30px; border-radius: 16px; width: 90%; max-width: 900px; border: 1px solid #555; box-shadow: 0 20px 50px rgba(0,0,0,0.5); color: #fff; animation: slideUp 0.3s; max-height: 95vh; overflow-y: auto; }
+        
+        /* 报告表格与时间轴 */
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; color: #333; }
+        .data-table th { text-align: left; border-bottom: 2px solid #ddd; padding: 8px; color: #666; background: #f1f1f1; }
+        .data-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .data-table tr:hover { background: #f9f9f9; }
+        
+        .timeline { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 15px; }
+        .dot { width: 14px; height: 14px; border-radius: 50%; position: relative; cursor: help; transition: 0.2s; }
+        .dot:hover { transform: scale(1.5); z-index: 10; border: 1px solid #fff; }
+        .dot.correct { background: var(--success); }
+        .dot.wrong { background: var(--error); }
+        .dot.switch { border: 2px solid #fff; box-shadow: 0 0 5px rgba(255,255,255,0.8); z-index: 5; }
+        
+        .switch-chain-item { padding: 10px; border-left: 4px solid var(--accent); background: #f8f9fa; margin-bottom: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; color: #333; border-radius: 0 4px 4px 0; }
+
+        canvas { background: #222; border-radius: 8px; padding: 10px; width: 100%; height: 250px; }
+        .cfg-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 10px; background: #333; border-radius: 6px; }
+        
+        #feedbackOverlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); pointer-events: none; opacity: 0; transition: 0.2s; z-index: 3000; }
+        #feedbackText { font-size: 6rem; font-weight: bold; text-shadow: 0 5px 20px rgba(0,0,0,0.8); white-space: nowrap; }
+
+        /* 自定义规则网格 */
+        .custom-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top:10px; }
+        .chk-label { display: flex; align-items: flex-start; font-size: 0.8rem; background: #222; padding: 6px 8px; border-radius: 4px; cursor: pointer; transition:0.2s; line-height: 1.4; word-break: break-all; }
+        .chk-label:hover { background: #444; }
+        .chk-label input { margin-right: 8px; flex-shrink: 0; margin-top: 2px; }
+        .disabled-sec { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
+
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* 使用说明弹窗样式 */
+        #helpModal .modal-content {
+            max-width: 820px;
+            background: #1e1e1e;
+            border: 1px solid #444;
+            padding: 0;
+            overflow: hidden;
+        }
+        .help-header {
+            background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
+            padding: 28px 35px 22px;
+            border-bottom: 1px solid #3a5068;
+            position: sticky; top: 0; z-index: 10;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .help-header h2 { margin: 0; font-size: 1.3rem; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .help-header p { margin: 6px 0 0; font-size: 0.82rem; color: #7fb3d3; }
+        .help-close { background: none; border: 1px solid #555; color: #aaa; padding: 6px 14px; border-radius: 5px; font-size: 0.85rem; cursor: pointer; }
+        .help-close:hover { background: #333; color: #fff; }
+
+        .help-body { padding: 28px 35px; max-height: calc(95vh - 110px); overflow-y: auto; }
+        
+        /* 目录 */
+        .help-toc { background: #252525; border: 1px solid #383838; border-radius: 10px; padding: 18px 22px; margin-bottom: 30px; }
+        .help-toc h3 { margin: 0 0 12px; font-size: 0.9rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .help-toc ol { margin: 0; padding-left: 22px; column-count: 2; column-gap: 30px; }
+        .help-toc li { margin-bottom: 5px; }
+        .help-toc a { color: var(--accent); text-decoration: none; font-size: 0.88rem; }
+        .help-toc a:hover { text-decoration: underline; }
+        @media (max-width: 600px) { .help-toc ol { column-count: 1; } }
+
+        /* 章节通用 */
+        .help-section { margin-bottom: 36px; scroll-margin-top: 20px; }
+        .help-section h2 { font-size: 1.1rem; color: #e0e0e0; border-left: 4px solid var(--accent); padding-left: 14px; margin: 0 0 16px; }
+        .help-section h3 { font-size: 0.95rem; color: #c8c8c8; margin: 18px 0 10px; }
+        .help-section p { font-size: 0.88rem; color: #aaa; line-height: 1.7; margin: 0 0 10px; }
+        .help-section ul, .help-section ol { font-size: 0.88rem; color: #aaa; padding-left: 22px; line-height: 1.8; margin: 0 0 10px; }
+        .help-section li { margin-bottom: 3px; }
+        .help-section strong { color: #ddd; }
+        .help-section code { background: #2e2e2e; border: 1px solid #404040; border-radius: 3px; padding: 1px 6px; font-size: 0.82rem; color: #7ec8e3; font-family: monospace; }
+        .help-divider { border: none; border-top: 1px solid #333; margin: 30px 0; }
+
+        /* 对比表格 */
+        .help-table-wrap { overflow-x: auto; margin: 12px 0; }
+        .help-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .help-table th { background: #2a2a2a; color: #ccc; padding: 9px 12px; text-align: left; border-bottom: 2px solid #3a3a3a; white-space: nowrap; }
+        .help-table td { padding: 8px 12px; border-bottom: 1px solid #2e2e2e; color: #999; vertical-align: top; }
+        .help-table tr:hover td { background: #242424; }
+        .help-table td:first-child { font-weight: 600; color: #ccc; }
+        .help-table .highlight { color: #3498db; font-weight: 600; }
+
+        /* 规则卡片网格 */
+        .rule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 12px 0; }
+        .rule-card { background: #252525; border: 1px solid #353535; border-radius: 7px; padding: 10px 13px; }
+        .rule-card .rule-id { font-size: 0.72rem; color: #666; margin-bottom: 3px; }
+        .rule-card .rule-name { font-size: 0.85rem; color: #ccc; font-weight: 600; }
+        .rule-card.wild { border-color: #3a3050; background: #1e1a2e; }
+        .rule-card.wild .rule-id { color: #8e44ad; }
+        .rule-card.wild .rule-name { color: #b39ddb; }
+
+        /* 快捷键徽章 */
+        .key-badge { display: inline-block; background: #2e2e2e; border: 1px solid #555; border-bottom: 2px solid #444; border-radius: 4px; padding: 1px 8px; font-size: 0.78rem; color: #ddd; font-family: monospace; margin: 0 2px; }
+
+        /* 提示框 */
+        .help-tip { background: #1a2a1a; border-left: 3px solid #27ae60; border-radius: 0 6px 6px 0; padding: 11px 15px; margin: 12px 0; font-size: 0.87rem; color: #8bc9a0; line-height: 1.6; }
+        .help-tip.warn { background: #2a1f10; border-left-color: #f39c12; color: #c9a96e; }
+        .help-tip.info { background: #102030; border-left-color: #3498db; color: #7ab8d9; }
+
+        /* 指标卡片 */
+        .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+        .metric-card { background: #252525; border: 1px solid #333; border-radius: 8px; padding: 13px; text-align: center; }
+        .metric-card .m-value { font-size: 1.4rem; font-weight: bold; color: var(--accent); }
+        .metric-card .m-label { font-size: 0.78rem; color: #777; margin-top: 4px; }
+        @media (max-width: 500px) { .metric-grid { grid-template-columns: 1fr 1fr; } }
+
+        /* 流程步骤 */
+        .step-list { counter-reset: step; list-style: none; padding: 0; margin: 10px 0; }
+        .step-list li { counter-increment: step; display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; font-size: 0.88rem; color: #aaa; line-height: 1.6; }
+        .step-list li::before { content: counter(step); flex-shrink: 0; width: 24px; height: 24px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; color: #fff; font-weight: bold; margin-top: 1px; }
+
+        /* Q&A */
+        .qa-item { background: #242424; border: 1px solid #333; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+        .qa-q { padding: 12px 16px; font-size: 0.88rem; color: #ccc; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .qa-q::after { content: '▾'; color: #666; }
+        .qa-a { padding: 0 16px 13px; font-size: 0.87rem; color: #999; line-height: 1.7; }
+    </style>
+</head>
+<body>
+
+<button id="exitFocusHint" onclick="game.toggleFocus()">按 F 退出专注</button>
+
+<div class="container">
+    <header>
+        <h1>🧪 认知灵活性实验室 <span class="badge">v10.4 CUSTOM</span></h1>
+        <div style="font-size:0.9rem; color:#aaa; display:flex; align-items:center; gap:12px;">
+            <button class="btn-outline" style="font-size:0.8rem; padding:5px 12px;" onclick="ui.openHelp()">📖 使用说明</button>
+            <span id="headerStatus">配置中...</span>
+        </div>
+    </header>
+
+    <div id="gameInterface" class="game-grid">
+        <div class="left-panel">
+            <div class="control-bar">
+                <button class="btn-start" onclick="ui.openConfig()">⚙️ 新实验</button>
+                <button class="btn-outline" onclick="game.toggleAutoMode()" id="modeBtn">🃏 自动发牌</button>
+                <div style="margin-left:auto; display:flex; gap:10px;">
+                    <button class="btn-verify" id="verifyBtn" onclick="game.verify()">🔬 验证 (V)</button>
+                </div>
+            </div>
+
+            <div id="manualSelectors">
+                <div class="selector-section">
+                    <div class="sec-title">构造刺激 (Stimuli)</div>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <button class="opt-btn red" id="s_H" onclick="ui.selectSuit('H')">♥</button>
+                        <button class="opt-btn red" id="s_D" onclick="ui.selectSuit('D')">♦</button>
+                        <button class="opt-btn black" id="s_S" onclick="ui.selectSuit('S')">♠</button>
+                        <button class="opt-btn black" id="s_C" onclick="ui.selectSuit('C')">♣</button>
+                    </div>
+                    <div id="rankContainer" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+                </div>
+            </div>
+
+            <div id="autoCardArea" style="display:none;">
+                <div class="auto-card" id="bigCard">
+                    <div class="card-ctx" id="prevCardHint"></div>
+                    <div class="card-suit" id="bigCardSuit">♥</div>
+                    <div class="card-rank" id="bigCardRank">A</div>
+                </div>
+            </div>
+
+            <div class="play-area">
+                <div class="drop-zone" onclick="game.submit('Left')">👈 左分类 <span class="key-hint">←</span></div>
+                <div class="drop-zone" onclick="game.submit('Right')">右分类 👉 <span class="key-hint">→</span></div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="status-panel">
+                <div class="stat-row"><span>连对计数</span><span class="stat-val" id="dispStreak">0</span></div>
+                <div class="stat-row"><span>上轮耗时</span><span class="stat-val" id="lastRt">--</span></div>
+                <div class="stat-row" style="margin-top:10px;">
+                    <span style="font-size:0.8rem">自适应难度</span>
+                    <span class="stat-val" style="font-size:0.8rem" id="diffVal">L3</span>
+                </div>
+                <div class="diff-bar-bg"><div class="diff-bar-fill" id="diffBar"></div></div>
+            </div>
+            
+            <div class="log-box" id="logBox">
+                <div style="text-align:center; color:#666; padding:20px;">等待实验开始...</div>
+            </div>
+
+            <div style="margin-top:auto; display:flex; gap:10px;">
+                <button class="btn-outline" style="flex:1" onclick="ui.showHistory()">📈 趋势</button>
+                <button class="btn-outline" style="flex:1" onclick="game.toggleFocus()">🧘 专注</button>
+                <button class="btn-outline" style="flex:1; color:#f39c12; border-color:#f39c12;" onclick="inquiry.trigger()">❓ 质询</button>
+                <button class="btn-outline" style="flex:1; color:#e74c3c; border-color:#e74c3c;" onclick="game.end()">⏹ 结束</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reportSection" style="display:none; padding:30px; animation:slideUp 0.3s; color:#333; background:#f0f2f5;"></div>
+</div>
+
+<div id="configModal" class="modal" style="display:flex;">
+    <div class="modal-content" style="max-width:550px;">
+        <h2 style="margin-top:0">⚙️ 实验参数配置</h2>
+        
+        <div style="max-height:450px; overflow-y:auto; padding-right:10px;">
+            
+            <div class="cfg-row" style="background:#222; border:1px solid #444;">
+                <div>
+                    <strong>🔧 自定义规则模式</strong>
+                    <span class="cfg-desc">开启后手动勾选训练规则</span>
+                </div>
+                <input type="checkbox" id="checkCustom" onchange="ui.toggleCustomUI(this.checked)">
+            </div>
+
+            <div id="customRuleSection" style="display:none; background:#2a2a2a; padding:10px; border-radius:6px; margin-bottom:15px; border:1px solid #444;">
+                <div style="font-size:0.8rem; color:#aaa; margin-bottom:5px; display:flex; justify-content:space-between;">
+                    <span>请选择至少2项规则:</span>
+                    <span style="cursor:pointer; color:var(--accent);" onclick="ui.selectAllRules()">全选</span>
+                </div>
+                <div class="custom-grid" id="customGrid"></div>
+            </div>
+
+            <div id="presetSection">
+                <div class="cfg-row">
+                    <div>
+                        <strong>训练阶段</strong>
+                        <span class="cfg-desc">⭐ 新手建议从第一阶段开始</span>
+                    </div>
+                    <select id="phaseSelect" style="padding:5px; background:#444; color:#fff; border:none; border-radius:4px;">
+                        <option value="1" selected>阶段 1 (入门: 规则1,3,5)</option>
+                        <option value="2">阶段 2 (标准: 规则1-6)</option>
+                        <option value="3">阶段 3 (进阶: 规则1-7)</option>
+                        <option value="4">阶段 4 (大师: 全规则)</option>
+                    </select>
+                </div>
+
+                <div style="font-size:0.75rem; color:#888; text-transform:uppercase; letter-spacing:1px; padding:6px 4px 4px; margin-top:4px;">规则池扩展</div>
+
+                <div class="cfg-row">
+                    <div>
+                        <strong>🃏 预设外卡规则</strong>
+                        <span class="cfg-desc">混入6条固定外卡（如"同花色放左"）</span>
+                    </div>
+                    <input type="checkbox" id="checkWild">
+                </div>
+
+                <div class="cfg-row" style="background:#1e2a1e; border:1px solid #2d4a2d;">
+                    <div>
+                        <strong style="color:#6fcf97;">🌐 动态外卡（无限生成）</strong>
+                        <span class="cfg-desc">每次切换有 30% 概率生成全新规则，无法死记硬背</span>
+                    </div>
+                    <input type="checkbox" id="checkDynamic">
+                </div>
+            </div>
+
+            <div class="cfg-row">
+                <div>
+                    <strong>🏆 训练目标</strong>
+                    <span class="cfg-desc">设定挑战的胜利条件</span>
+                </div>
+                <select id="goalSelect" style="padding:5px; background:#444; color:#fff; border:none; border-radius:4px;">
+                    <option value="switch_5">完成 5 次规则切换</option>
+                    <option value="none">无限制自由训练</option>
+                    <option value="acc_80">正确率 ≥ 80%</option>
+                    <option value="adapt_2s">平均适应时间 < 2秒</option>
+                </select>
+            </div>
+
+            <div class="cfg-row">
+                <div>
+                    <strong>🌪️ 概率噪声 (Noise)</strong>
+                    <span class="cfg-desc">10% 概率给予错误反馈</span>
+                </div>
+                <input type="checkbox" id="checkNoise" onchange="ui.toggleNoiseModeVis(this.checked)">
+            </div>
+
+            <div class="cfg-row" id="noiseModeRow" style="display:none; background:#2a2020; border:1px solid #4a3030;">
+                <div>
+                    <strong>噪声提示强度</strong>
+                    <span class="cfg-desc">选择噪声发生时玩家看到的反馈样式</span>
+                </div>
+                <select id="noiseModeSelect" style="padding:5px; background:#444; color:#fff; border:none; border-radius:4px;">
+                    <option value="directional">方向提示（✅? / ❌?）</option>
+                    <option value="neutral">中性提示（？）</option>
+                    <option value="none">无提示（纯噪声）</option>
+                </select>
+            </div>
+            
+            <div class="cfg-row">
+                <div>
+                    <strong>自动发牌模式</strong>
+                </div>
+                <input type="checkbox" id="checkAuto" checked>
+            </div>
+        </div>
+
+        <button class="btn-start" style="width:100%; margin-top:20px; padding:12px;" onclick="game.start()">启动实验</button>
+        <button class="btn-outline" style="width:100%; margin-top:10px; padding:10px;" onclick="ui.openHelp()">📖 查看使用说明</button>
+    </div>
+</div>
+
+<div id="historyModal" class="modal">
+    <div class="modal-content" style="background:#222; border:1px solid #444;">
+        <span onclick="ui.closeModal('historyModal')" style="position:absolute; right:20px; cursor:pointer;">✖</span>
+        <h2>📈 认知进化曲线</h2>
+        <canvas id="historyChart"></canvas>
+    </div>
+</div>
+
+<div id="inquiryModal" class="modal">
+    <div class="modal-content" style="background:#222; border:1px solid #f39c12;">
+        <h2 style="color:#f39c12; margin-top:0;">🔎 判罚质询</h2>
+        <div id="inquiryContent" style="background:#333; padding:15px; border-radius:6px; font-family:monospace; margin-bottom:15px;"></div>
+        <div style="text-align:right;">
+            <button class="btn-outline" style="color:#e74c3c; border-color:#e74c3c;" onclick="inquiry.reportError()">⚡ 报告系统偏差</button>
+            <button class="btn-start" onclick="ui.closeModal('inquiryModal')">继续</button>
+        </div>
+    </div>
+</div>
+
+<div id="feedbackOverlay"><div id="feedbackText">✅</div></div>
+
+<!-- ===== 使用说明弹窗 ===== -->
+<div id="helpModal" class="modal">
+  <div class="modal-content">
+    <div class="help-header">
+      <div>
+        <h2>📖 认知灵活性实验室 · 完整使用说明</h2>
+        <p>基于经典威斯康星卡片分类任务（WCST）的高级认知训练系统 · v10.4 CUSTOM</p>
+      </div>
+      <button class="help-close" onclick="ui.closeModal('helpModal')">✖ 关闭</button>
+    </div>
+    <div class="help-body">
+
+      <!-- 目录 -->
+      <div class="help-toc">
+        <h3>📋 目录</h3>
+        <ol>
+          <li><a href="#h-overview">概述与核心价值</a></li>
+          <li><a href="#h-rules">规则库详解</a></li>
+          <li><a href="#h-mechanism">核心机制</a></li>
+          <li><a href="#h-layout">界面布局</a></li>
+          <li><a href="#h-config">配置说明</a></li>
+          <li><a href="#h-operation">操作指南</a></li>
+          <li><a href="#h-report">复盘报告解读</a></li>
+          <li><a href="#h-custom">自定义规则模式</a></li>
+          <li><a href="#h-tips">训练建议</a></li>
+          <li><a href="#h-faq">常见问题</a></li>
+        </ol>
+      </div>
+
+      <!-- 一、概述 -->
+      <div class="help-section" id="h-overview">
+        <h2>一、概述与核心价值</h2>
+        <p>本工具专为训练和测量<strong>认知灵活性</strong>而设计 —— 即在不同规则间快速切换、适应变化的能力。它融合了自适应难度、噪声模拟、主动验证和详细复盘等功能，让您能够像科学家一样观察自己的思维过程，并精准强化弱点。</p>
+
+        <h3>它训练什么？</h3>
+        <ul>
+          <li><strong>认知灵活性</strong>：当环境规则突然改变时，能否快速放弃旧策略、建立新假设。</li>
+          <li><strong>抑制控制</strong>：克制住沿用旧规则的冲动，减少"持续性错误/思维定势"。</li>
+          <li><strong>模式识别</strong>：从模糊的"对/错"反馈中提取规律，建立假设。</li>
+          <li><strong>抗干扰能力</strong>：在 10% 的错误反馈中仍能保持判断稳健性。</li>
+          <li><strong>元认知</strong>：通过复盘数据观察自己的思维模式，主动调整策略。</li>
+        </ul>
+
+        <h3>与同类工具对比</h3>
+        <div class="help-table-wrap">
+          <table class="help-table">
+            <thead><tr><th>对比维度</th><th class="highlight">本工具</th><th>经典 WCST</th><th>商业脑训练 APP</th></tr></thead>
+            <tbody>
+              <tr><td>规则空间</td><td class="highlight">15 条（含 6 条动态外卡）</td><td>3 维度（颜色/形状/数量）</td><td>多为简单分类，深度有限</td></tr>
+              <tr><td>反馈透明度</td><td class="highlight">完整切换链、审计日志</td><td>仅几个汇总分数</td><td>综合评分，无原始数据</td></tr>
+              <tr><td>自适应难度</td><td class="highlight">按适应时间动态调整阈值</td><td>固定切换模式</td><td>固定或简单递增</td></tr>
+              <tr><td>主动探索</td><td class="highlight">验证按钮（反例检验假设）</td><td>只能被动接收反馈</td><td>极少提供</td></tr>
+              <tr><td>噪声模拟</td><td class="highlight">可选 10% 错误反馈</td><td>反馈 100% 准确</td><td>无</td></tr>
+              <tr><td>数据深度</td><td class="highlight">RT、规则级正确率、历史趋势</td><td>有限</td><td>基础指标</td></tr>
+              <tr><td>定制性</td><td class="highlight">可自定义规则组合</td><td>固定参数</td><td>预设课程</td></tr>
+              <tr><td>机制验证</td><td class="highlight">审计日志可逐条核对</td><td>不透明</td><td>黑箱</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 二、规则库 -->
+      <div class="help-section" id="h-rules">
+        <h2>二、规则库详解</h2>
+        <p>工具内置 <strong>15 条</strong>分类规则，分为基础规则（1–9）和需要上下文的外卡规则（10–15）。</p>
+
+        <h3>基础规则（无需参考上一张牌）</h3>
+        <div class="rule-grid">
+          <div class="rule-card"><div class="rule-id">规则 1</div><div class="rule-name">奇左偶右</div></div>
+          <div class="rule-card"><div class="rule-id">规则 2</div><div class="rule-name">奇右偶左</div></div>
+          <div class="rule-card"><div class="rule-id">规则 3</div><div class="rule-name">红左黑右</div></div>
+          <div class="rule-card"><div class="rule-id">规则 4</div><div class="rule-name">红右黑左</div></div>
+          <div class="rule-card"><div class="rule-id">规则 5</div><div class="rule-name">小左大右（≤6 小）</div></div>
+          <div class="rule-card"><div class="rule-id">规则 6</div><div class="rule-name">小右大左</div></div>
+          <div class="rule-card"><div class="rule-id">规则 7</div><div class="rule-name">质左合右</div></div>
+          <div class="rule-card"><div class="rule-id">规则 8</div><div class="rule-name">红奇或黑偶 → 左</div></div>
+          <div class="rule-card"><div class="rule-id">规则 9</div><div class="rule-name">红偶或黑奇 → 左</div></div>
+        </div>
+
+        <h3>外卡规则（需与上一张牌比较）</h3>
+        <div class="rule-grid">
+          <div class="rule-card wild"><div class="rule-id">🃏 规则 10</div><div class="rule-name">比上一张大放左</div></div>
+          <div class="rule-card wild"><div class="rule-id">🃏 规则 11</div><div class="rule-name">同花色放左</div></div>
+          <div class="rule-card wild"><div class="rule-id">🃏 规则 12</div><div class="rule-name">点数是 3 的倍数放左</div></div>
+          <div class="rule-card wild"><div class="rule-id">🃏 规则 13</div><div class="rule-name">同色放左（红跟红/黑跟黑）</div></div>
+          <div class="rule-card wild"><div class="rule-id">🃏 规则 14</div><div class="rule-name">比上一张小放左</div></div>
+          <div class="rule-card wild"><div class="rule-id">🃏 规则 15</div><div class="rule-name">点数和上一张相同放左</div></div>
+        </div>
+        <div class="help-tip info">外卡规则在第一张牌时无法比较，系统会自动将其判定为"Right"以确保一致性。建议在掌握基础规则后再开启外卡。</div>
+
+        <h3>动态外卡规则（V10.4 新增）</h3>
+        <p>开启配置中的 <strong>🌐 动态外卡</strong> 后，每次规则切换有 30% 的概率触发动态生成器，从 12 种规则模板中随机参数化地产生一条全新规则。这些规则并不存在于任何固定规则库中，每次游戏都可能不同。动态规则在所有报告视图中以 <strong>🔄</strong> 标记区分。模板包括：</p>
+        <ul>
+          <li>点数倍数（2–5的倍数）、点数阈值（≤N 或 ≥N）</li>
+          <li>花色组合（随机2花色放左）、颜色复合条件</li>
+          <li>质数判断、基于上一张牌的差值/大小比较</li>
+          <li>两张牌点数之和奇偶、复合 OR 条件等</li>
+        </ul>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 三、核心机制 -->
+      <div class="help-section" id="h-mechanism">
+        <h2>三、核心机制详解</h2>
+
+        <h3>3.1 反馈与规则切换</h3>
+        <p>每放一张牌，系统给出 <strong>✅ 或 ❌</strong> 的反馈（带"?"表示噪声干扰）。<strong>规则始终隐藏</strong>，您需通过累积反馈推断当前规则。当在同一规则下连续正确达到一定次数后，系统会<strong>悄悄切换规则，不作任何通知</strong>。您只能通过反馈的突然变化察觉，并重新建立假设。</p>
+
+        <h3>3.2 自适应难度</h3>
+        <p>系统记录每次规则切换后到连续正确 3 次所需的<strong>适应时间</strong>，并据此动态调整切换阈值：</p>
+        <div class="metric-grid">
+          <div class="metric-card"><div class="m-value" style="color:#27ae60">＜ 2s</div><div class="m-label">适应快 → 阈值降低，切换更频繁</div></div>
+          <div class="metric-card"><div class="m-value" style="color:#f39c12">2–6s</div><div class="m-label">正常适应 → 阈值不变</div></div>
+          <div class="metric-card"><div class="m-value" style="color:#e74c3c">＞ 6s</div><div class="m-label">适应慢 → 阈值升高，给更多时间</div></div>
+        </div>
+        <p>阈值范围始终保持在 <strong>3–6 次</strong>之间，确保挑战性与您的当前水平匹配。</p>
+
+        <h3>3.3 持续性错误（思维定势）</h3>
+        <p>当您犯错，且该错误方向与<strong>上一规则</strong>的预期一致时，系统会标记为"持续性错误"（日志中显示 🔒）。这是衡量您是否固着于旧规则的关键指标。报告中会单独统计此类错误的次数与占比。</p>
+
+        <h3>3.4 噪声机制</h3>
+        <p>若开启噪声，每次反馈有 <strong>10% 概率被故意反转</strong>。但系统内部仍使用真实正确性进行规则切换和统计，确保训练数据的准确性。带"?"的反馈提醒您该回合存在噪声干扰，训练您相信统计规律而非单次结果。</p>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 四、界面布局 -->
+      <div class="help-section" id="h-layout">
+        <h2>四、界面布局</h2>
+        <p>页面主要分为左右两个区域，各司其职：</p>
+        <ul>
+          <li><strong>左侧（操作区）</strong>：发牌区（自动模式下显示大牌面，手动模式下显示花色/点数选择器）+ 底部的左/右分类区域。所有核心判断操作在此完成。</li>
+          <li><strong>右侧（数据区）</strong>：实时显示连对计数、上轮耗时和自适应难度条，下方为实时日志流，底部为功能按钮（趋势、专注、质询、结束）。</li>
+          <li><strong>顶部工具栏</strong>：包含新实验配置按钮、自动/手动发牌切换和验证按钮。</li>
+          <li><strong>专注模式</strong>：按 <span class="key-badge">F</span> 键可隐藏右侧面板，进入无干扰的纯操作视图。</li>
+        </ul>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 五、配置说明 -->
+      <div class="help-section" id="h-config">
+        <h2>五、配置说明</h2>
+        <p>点击左上角 <strong>"⚙️ 新实验"</strong> 打开配置窗口，可调整以下参数：</p>
+
+        <h3>自定义规则模式</h3>
+        <p>开启后，可手动勾选任意规则（<strong>至少选 2 项</strong>，否则无法启动）。系统将仅在所选规则间切换，适合针对薄弱规则进行专项强化。关闭时，使用下方的预设阶段配置。</p>
+
+        <h3>训练阶段（仅自定义模式关闭时可用）</h3>
+        <ul>
+          <li><strong>阶段 1（入门）</strong>：规则 1、3、5 —— 新手强烈推荐，从最基础的奇偶、颜色、大小维度起步。</li>
+          <li><strong>阶段 2（标准）</strong>：规则 1–6，增加两条对应规则，难度适中。</li>
+          <li><strong>阶段 3（进阶）</strong>：规则 1–7，引入质数规则，要求更强的工作记忆。</li>
+          <li><strong>阶段 4（大师）</strong>：全规则 1–9，含两条复合条件规则（规则 8、9），挑战上限。</li>
+        </ul>
+
+        <h3>外卡规则与动态外卡（仅自定义模式关闭时可用）</h3>
+        <p><strong>🃏 预设外卡规则</strong>：勾选后将规则 10–15 混入当前阶段，实现等概率抽取，规则空间扩展至最多 15 条。适合有一定基础后的进阶训练。</p>
+        <p><strong>🌐 动态外卡（无限生成）</strong>：开启后，每次规则切换时有 <strong>30% 的概率</strong>由生成器随机产生一条全新规则（从 12 种模板中参数化生成），使规则空间理论上无限。训练时您无法依赖记忆规则库，必须对每一张牌实时建模推断。动态规则在报告中以 🔄 标记。建议在完成阶段 2 以上训练后再开启。</p>
+
+        <h3>训练目标</h3>
+        <ul>
+          <li><strong>完成 5 次规则切换</strong>：标准挑战，报告会显示目标达成提示。</li>
+          <li><strong>无限制自由训练</strong>：无压力模式，适合探索和热身。</li>
+          <li><strong>正确率 ≥ 80%</strong>：适合检验对某阶段规则的掌握程度。</li>
+          <li><strong>平均适应时间 ＜ 2 秒</strong>：极限挑战，要求超快的规则切换能力。</li>
+        </ul>
+
+        <h3>概率噪声与提示强度</h3>
+        <p>勾选 <strong>🌪️ 概率噪声</strong> 后，10% 的反馈将被故意反转。开启噪声后，下方会出现 <strong>噪声提示强度</strong> 下拉菜单，提供三种模式：</p>
+        <ul>
+          <li><strong>方向提示（✅? / ❌?）</strong>（默认）：噪声时显示带问号的对错图标，告知方向但提醒您可能有误。适合初次接触噪声训练的用户。</li>
+          <li><strong>中性提示（？）</strong>：噪声时仅显示灰色问号，完全不含对错方向，迫使您纯粹依赖统计推断。适合中级训练者。</li>
+          <li><strong>无提示（纯噪声）</strong>：噪声反馈与正常反馈外观完全相同，您无法识别任何噪声信号，唯一可信赖的是多回合的统计规律。这是最高难度的抗干扰训练。</li>
+        </ul>
+
+        <h3>自动发牌模式</h3>
+        <p>开启（推荐）时，系统随机发牌，您只需专注判断。关闭时可手动构造花色和点数，适用于针对性练习或手动验证某张牌在不同规则下的预期答案。</p>
+
+        <div class="help-tip">配置完成后点击 <strong>"启动实验"</strong> 开始。训练中随时可按 <span class="key-badge">⚙️ 新实验</span> 重新配置（会重置当前训练数据）。</div>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 六、操作指南 -->
+      <div class="help-section" id="h-operation">
+        <h2>六、操作指南</h2>
+
+        <h3>基本操作</h3>
+        <p>自动发牌模式下，屏幕中央显示一张大扑克牌。点击下方的 <strong>"👈 左分类"</strong> 或 <strong>"右分类 👉"</strong>，或使用键盘快捷键完成判断。每次判断后屏幕中央会闪现大尺寸的反馈图标。</p>
+
+        <h3>键盘快捷键</h3>
+        <ul>
+          <li><span class="key-badge">←</span> 左箭头 — 放左</li>
+          <li><span class="key-badge">→</span> 右箭头 — 放右</li>
+          <li><span class="key-badge">V</span> — 触发验证模式（连对 ≥ 3 次时可用）</li>
+          <li><span class="key-badge">F</span> — 开启/关闭专注模式</li>
+          <li><span class="key-badge">Q</span> — 打开质询弹窗（查看当前隐藏规则）</li>
+          <li><span class="key-badge">ESC</span> — 退出专注模式</li>
+        </ul>
+
+        <h3>主动验证（V 键）</h3>
+        <p>当连对计数达到 3 次时，<strong>"🔬 验证"</strong> 按钮会亮起（紫色高亮）。点击后，您可故意出一张您认为可能<strong>违反</strong>当前规则的牌，系统给出紫色反馈（"符合"或"违背"）。验证回合<strong>不影响连对计数和规则切换</strong>，专为检验假设而设计 —— 这是培养科学探索思维的核心功能。</p>
+
+        <div class="help-tip">💡 善用验证功能可大幅缩短规则识别时间。连对 3 次后先验证一次反例，再决定是否继续积累连对，能显著提升训练效率。</div>
+
+        <h3>质询（Q 键）</h3>
+        <p>点击 <strong>"❓ 质询"</strong> 或按 <span class="key-badge">Q</span>，弹窗显示上一回合的牌面、您的选择以及<strong>当前隐藏规则的真实名称</strong>。适合在完全困惑时使用，但不建议频繁依赖，以免削弱自主推理能力。</p>
+
+        <h3>专注模式（F 键）</h3>
+        <p>按 <span class="key-badge">F</span> 隐藏右侧面板，整个界面只保留操作区，减少视觉干扰，提升沉浸感。再次按 <span class="key-badge">F</span> 或 <span class="key-badge">ESC</span> 恢复。</p>
+
+        <h3>结束训练</h3>
+        <p>点击 <strong>"⏹ 结束"</strong> 按钮，系统立即生成完整复盘报告并跳转至报告视图。</p>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 七、报告解读 -->
+      <div class="help-section" id="h-report">
+        <h2>七、复盘报告解读</h2>
+
+        <h3>核心指标</h3>
+        <ul>
+          <li><strong>正确率</strong>：本次整体正确率，排除验证回合。</li>
+          <li><strong>平均 RT</strong>：平均反应时（毫秒），数值越低说明决策越快、越自动化。</li>
+          <li><strong>平均适应时间</strong>：每次规则切换后重新掌握新规则所需的平均时间，是衡量认知灵活性的核心指标。</li>
+        </ul>
+
+        <h3>规则矩阵</h3>
+        <p>展示每条规则的出现次数、正确率和平均反应时。通过此表可<strong>精准定位薄弱规则</strong>，例如若规则 8 正确率显著偏低，可在下次训练中使用自定义模式专项强化。</p>
+
+        <h3>时间轴</h3>
+        <p>用彩色点阵可视化所有回合。绿色为正确，红色为错误，白边大圆点为规则切换点，橘色边框为噪声干扰回合，白色边框为持续性错误。<strong>鼠标悬停</strong>可查看该回合的详细数据（回合号、牌面、规则、RT）。</p>
+
+        <h3>规则切换链</h3>
+        <p>完整列出初始规则及每一次切换的回合、切换前后的规则名称，以及该次规则的适应时间（若已完成适应）。这有助于还原整场训练的规则演变过程。</p>
+
+        <h3>审计日志</h3>
+        <p>逐条列出所有回合的原始数据：回合号、牌面、您的选择、当前规则、真实结果、显示结果（可能被噪声反转）、噪声标记（🌪️）、持续性错误标记（🔒）、切换标记（⚡）和反应时。此日志确保训练机制的完全透明，您可用其验证系统是否按预期运行。</p>
+
+        <div class="help-tip info">报告底部的 <strong>"重新开始"</strong> 按钮会刷新页面并返回配置弹窗，之前的历史趋势数据仍会保留。</div>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 八、自定义规则模式 -->
+      <div class="help-section" id="h-custom">
+        <h2>八、自定义规则模式详解</h2>
+
+        <h3>开启方法</h3>
+        <p>在配置弹窗中勾选 <strong>"🔧 自定义规则模式"</strong>，下方会出现包含全部 15 条规则的勾选网格。预设阶段和外卡规则选项会同时被禁用（因自定义模式已覆盖其功能）。</p>
+
+        <h3>规则选择要求</h3>
+        <p>必须<strong>至少勾选 2 项规则</strong>，否则启动时会弹出提示并阻止训练。单条规则无法产生切换行为，也会导致切换标记异常。系统会自动保存上次的勾选配置，下次打开时恢复；若从未使用过此模式，默认勾选入门规则（1、3、5）。</p>
+
+        <h3>专项强化用法</h3>
+        <p>若在报告规则矩阵中发现对某条规则（例如规则 8）掌握不佳，可开启自定义模式，勾选该规则加一两条熟悉的规则，进行集中练习，直至正确率提升后再回归完整阶段。</p>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 九、训练建议 -->
+      <div class="help-section" id="h-tips">
+        <h2>九、训练建议</h2>
+
+        <h3>循序渐进路线图</h3>
+        <ol class="step-list">
+          <li><strong>阶段 1 热身</strong>：熟悉操作流程和反馈模式，建立对三个基础维度的规则敏感度。</li>
+          <li><strong>阶段 2–4 扩展</strong>：逐步增加规则数量，挑战更复杂的分类维度，培养快速切换能力。</li>
+          <li><strong>开启外卡</strong>：引入动态规则，迫使自己放弃死记规则，转向实时建模每一张牌的特征。</li>
+          <li><strong>开启噪声</strong>：终极挑战，在 10% 错误反馈中保持冷静，学会相信统计规律而非单次结果。</li>
+        </ol>
+
+        <h3>进阶标准</h3>
+        <p>当您在当前阶段的报告中<strong>连续 2–3 次</strong>达到以下指标，即可考虑进入下一阶段或开启更高级机制（外卡、噪声）：</p>
+        <div class="metric-grid">
+          <div class="metric-card"><div class="m-value">＞80%</div><div class="m-label">正确率</div></div>
+          <div class="metric-card"><div class="m-value">＜2s</div><div class="m-label">平均适应时间</div></div>
+          <div class="metric-card"><div class="m-value">＜20%</div><div class="m-label">持续性错误率</div></div>
+        </div>
+
+        <h3>关键技巧</h3>
+        <ul>
+          <li><strong>善用验证功能</strong>：连对 3 次后不要急于继续，先用验证按钮出一张反例检验假设。"违背"说明假设有误，能帮您更快收敛到正确规则。</li>
+          <li><strong>数据驱动</strong>：每次训练后认真查看规则矩阵和持续性错误率，针对薄弱规则安排专项强化。</li>
+          <li><strong>定势打断</strong>：若持续性错误率高于 30%，出错后强制暂停一秒，清空对旧规则的预期，再做判断。</li>
+          <li><strong>历史追踪</strong>：趋势图中的三条曲线（正确率、反应时、适应时间）是评估长期进步的最直观证据。</li>
+        </ul>
+
+        <div class="help-tip warn">浏览器历史数据存储在本地，清除缓存会导致趋势记录丢失。如需长期留存，建议定期截图报告。</div>
+      </div>
+
+      <hr class="help-divider">
+
+      <!-- 十、常见问题 -->
+      <div class="help-section" id="h-faq">
+        <h2>十、常见问题</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">为什么我的反馈有时带问号（✅? / ❌?）？</div>
+          <div class="qa-a">表示这一回合受到了"概率噪声"的影响，反馈与实际结果相反。这是正常设计，旨在训练您的抗干扰能力。系统内部仍以真实正确性计算所有统计数据，不会影响正确率或规则切换判定。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">为什么我感觉规则没变，但连续正确计数突然归零了？</div>
+          <div class="qa-a">两种可能：一是发生了规则切换，只是您没察觉（可查看报告中的切换链确认）；二是您在当前规则下答错了一次，计数自然重置为零。连对计数归零不代表切换，仅代表连续正确的中断。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">规则切换的阈值为什么是变化的？</div>
+          <div class="qa-a">系统根据您的适应时间动态调整阈值。适应快则加快切换频率，适应慢则减慢切换，始终让难度与您的当前能力匹配。这是自适应难度机制的核心，确保训练既不会过于简单也不会让您挫败。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">如何验证系统没有作弊？</div>
+          <div class="qa-a">报告中的"审计日志"提供每一回合的原始数据，您可逐条核对规则、真实结果与显示结果，确认噪声标记和切换标记是否与设定一致。所有机制完全透明，没有任何黑箱操作。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">自定义规则至少需要 2 项，但我只想专练一条规则怎么办？</div>
+          <div class="qa-a">可以勾选目标规则加上一条最简单的规则（如规则 1"奇左偶右"），训练时虽有少量干扰，但依然可以重点练习目标规则。由于规则 1 逻辑简单，对专项练习的干扰较小。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">历史趋势数据丢失了怎么办？</div>
+          <div class="qa-a">历史数据存储在浏览器本地（localStorage），清除浏览器缓存或历史记录会导致数据丢失。目前系统最多保存 20 次训练记录。如需长期留存，建议定期截图趋势图或手动记录关键指标。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">三种噪声提示模式有什么区别？该如何选择？</div>
+          <div class="qa-a"><strong>方向提示（✅?/❌?）</strong>是默认模式，适合初次体验噪声训练：您能看到对错方向，问号提醒您该次反馈可能有误，最易上手。<strong>中性提示（？）</strong>难度居中：噪声时仅显示灰色问号，完全屏蔽对错方向，迫使您完全依赖统计推断。<strong>无提示（纯噪声）</strong>是最高难度：噪声反馈与正常反馈外观完全一致，您无法识别任何噪声信号，只能通过多回合统计规律辨别真相。建议按此顺序逐步升级。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">什么是动态外卡？它和预设外卡规则有什么不同？</div>
+          <div class="qa-a"><strong>预设外卡规则</strong>是固定的 6 条规则（10–15），您可以通过训练记忆和识别它们。<strong>动态外卡</strong>则不同——每次触发时由生成器实时产生一条参数化的新规则，规则空间理论上无限，您完全无法依赖记忆。报告中动态规则以 🔄 标记，每条动态规则的名称已包含其完整逻辑，便于复盘时理解。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">为什么不是每次切换都触发动态规则？</div>
+          <div class="qa-a">动态外卡的触发概率被设计为 30%，而非 100%。这种混合模式让训练保持可预测性的同时引入不确定性：您永远不知道下一条规则是来自规则池还是动态生成，这本身就是一种元认知挑战。如果每次切换都是动态规则，训练会因完全无规律可循而难以形成任何学习节奏。</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">专注模式下还能使用键盘快捷键吗？</div>
+          <div class="qa-a">可以。所有键盘快捷键在专注模式下均正常有效，包括 ←/→ 放牌、V 验证、Q 质询，以及 F / ESC 退出专注模式。</div>
+        </div>
+      </div>
+
+      <div style="text-align:center; padding: 20px 0 10px; color: #555; font-size: 0.82rem;">
+        认知灵活性实验室 v10.3 CUSTOM &nbsp;·&nbsp; 集科学性、透明性与可定制性于一体
+      </div>
+
+    </div><!-- end help-body -->
+  </div>
+</div>
+<!-- ===== end 使用说明弹窗 ===== -->
+
+<script>
+/** 规则库 - V9.0 扩展版 */
+const BASE_RULES = {
+    1: { name: "奇左偶右", func: (s, r) => r % 2 !== 0 ? 'Left' : 'Right' },
+    2: { name: "奇右偶左", func: (s, r) => r % 2 !== 0 ? 'Right' : 'Left' },
+    3: { name: "红左黑右", func: (s, r) => ['H','D'].includes(s) ? 'Left' : 'Right' },
+    4: { name: "红右黑左", func: (s, r) => ['H','D'].includes(s) ? 'Right' : 'Left' },
+    5: { name: "小左大右", func: (s, r) => r <= 6 ? 'Left' : 'Right' },
+    6: { name: "小右大左", func: (s, r) => r <= 6 ? 'Right' : 'Left' },
+    7: { name: "质左合右", func: (s, r) => [1,2,3,5,7,11,13].includes(r) ? 'Left' : 'Right' },
+    8: { name: "(红奇或黑偶)左", func: (s, r) => ((['H','D'].includes(s) && r%2!==0) || (!['H','D'].includes(s) && r%2===0)) ? 'Left' : 'Right' },
+    9: { name: "(红偶或黑奇)左", func: (s, r) => ((['H','D'].includes(s) && r%2===0) || (!['H','D'].includes(s) && r%2!==0)) ? 'Left' : 'Right' }
+};
+
+// 扩展的外卡规则库 (需上下文)
+const WILDCARD_RULES = {
+    10: { name: "比上一张大放左", func: (s, r, ctx) => (ctx && r > ctx.rank) ? 'Left' : 'Right', isWild: true },
+    11: { name: "同花色放左", func: (s, r, ctx) => (ctx && s === ctx.suit) ? 'Left' : 'Right', isWild: true },
+    12: { name: "点数是3的倍数放左", func: (s, r) => r % 3 === 0 ? 'Left' : 'Right', isWild: true },
+    13: { name: "同色放左(红跟红/黑跟黑)", func: (s, r, ctx) => {
+        if(!ctx) return 'Right';
+        const currRed = ['H','D'].includes(s); const prevRed = ['H','D'].includes(ctx.suit);
+        return (currRed === prevRed) ? 'Left' : 'Right';
+    }, isWild: true },
+    14: { name: "比上一张小放左", func: (s, r, ctx) => (ctx && r < ctx.rank) ? 'Left' : 'Right', isWild: true },
+    15: { name: "点数和上一张相同放左", func: (s, r, ctx) => (ctx && r === ctx.rank) ? 'Left' : 'Right', isWild: true }
+};
+
+const PHASES = { 1: [1,3,5], 2: [1,2,3,4,5,6], 3: [1,2,3,4,5,6,7], 4: [1,2,3,4,5,6,7,8,9] };
+
+/** ─────────────────────────────────────────
+ *  动态外卡规则生成器 (V10.4)
+ *  每次调用 generateDynamicRule() 返回一个全新的规则对象。
+ *  规则基于12种模板，参数随机化，保证逻辑清晰、可测试。
+ * ───────────────────────────────────────── */
+let _dynCounter = 0;
+function generateDynamicRule(excludeName) {
+    const RED = ['H','D'];
+    const SUITS = ['H','D','S','C'];
+    const SUIT_NAMES = { H:'♥', D:'♦', S:'♠', C:'♣' };
+    const PRIMES = [2,3,5,7,11,13];
+
+    const templates = [
+        // 1. 点数是 N 的倍数放左 (N=2..5)
+        () => { const n = [2,3,4,5][Math.floor(Math.random()*4)];
+            return { name:`点数是${n}的倍数放左`, func:(s,r)=>r%n===0?'Left':'Right' }; },
+        // 2. 点数 ≤ N 放左
+        () => { const n = [3,4,5,6,7,8][Math.floor(Math.random()*6)];
+            return { name:`点数≤${n}放左`, func:(s,r)=>r<=n?'Left':'Right' }; },
+        // 3. 点数 ≥ N 放左
+        () => { const n = [5,6,7,8,9,10][Math.floor(Math.random()*6)];
+            return { name:`点数≥${n}放左`, func:(s,r)=>r>=n?'Left':'Right' }; },
+        // 4. 指定花色放左（随机2花色组合）
+        () => { const pool=[...SUITS]; const a=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+            const b=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+            return { name:`${SUIT_NAMES[a]}或${SUIT_NAMES[b]}放左`,
+                func:(s)=>[a,b].includes(s)?'Left':'Right' }; },
+        // 5. 红色且奇数放左
+        () => ({ name:'红色且奇数放左', func:(s,r)=>(RED.includes(s)&&r%2!==0)?'Left':'Right' }),
+        // 6. 黑色且偶数放左
+        () => ({ name:'黑色且偶数放左', func:(s,r)=>(!RED.includes(s)&&r%2===0)?'Left':'Right' }),
+        // 7. 点数是质数放左
+        () => ({ name:'点数是质数放左', func:(s,r)=>PRIMES.includes(r)?'Left':'Right' }),
+        // 8. 比上一张大 N 以上放左
+        () => { const n=[1,2,3][Math.floor(Math.random()*3)];
+            return { name:`比上一张大${n}以上放左`, func:(s,r,ctx)=>(ctx&&r-ctx.rank>=n)?'Left':'Right', needsCtx:true }; },
+        // 9. 比上一张小 N 以上放左
+        () => { const n=[1,2,3][Math.floor(Math.random()*3)];
+            return { name:`比上一张小${n}以上放左`, func:(s,r,ctx)=>(ctx&&ctx.rank-r>=n)?'Left':'Right', needsCtx:true }; },
+        // 10. 与上一张点数差 ≤ N 放左
+        () => { const n=[1,2,3][Math.floor(Math.random()*3)];
+            return { name:`与上一张差≤${n}放左`, func:(s,r,ctx)=>(ctx&&Math.abs(r-ctx.rank)<=n)?'Left':'Right', needsCtx:true }; },
+        // 11. 两张牌点数之和为奇数放左
+        () => ({ name:'与上一张点数之和为奇放左',
+            func:(s,r,ctx)=>(ctx?(r+ctx.rank)%2!==0:r%2!==0)?'Left':'Right', needsCtx:true }),
+        // 12. 红色或点数≤N（复合OR）
+        () => { const n=[4,5,6][Math.floor(Math.random()*3)];
+            return { name:`红色或点数≤${n}放左`, func:(s,r)=>(RED.includes(s)||r<=n)?'Left':'Right' }; },
+    ];
+
+    // 尝试最多10次避免与上一条规则同名
+    for (let attempt = 0; attempt < 10; attempt++) {
+        const t = templates[Math.floor(Math.random() * templates.length)]();
+        if (t.name === excludeName) continue;
+        _dynCounter++;
+        return {
+            id: `dyn_${_dynCounter}`,
+            name: t.name,
+            func: t.func,
+            isDynamic: true,
+            needsCtx: t.needsCtx || false
+        };
+    }
+    // 保底：直接用第一个模板
+    _dynCounter++;
+    const fallback = templates[0]();
+    return { id:`dyn_${_dynCounter}`, name:fallback.name, func:fallback.func, isDynamic:true };
+}
+
+/** 核心引擎 */
+const game = {
+    state: {
+        active: false,
+        config: {},
+        pool: [], usedPool: [],
+        currentRule: null, previousRule: null, 
+        streak: 0, thresholdBase: 5, currentThreshold: 5,
+        logs: [], turn: 0, lastCard: null,
+        switchTime: 0, adaptTimes: [], verifyMode: false,
+        autoCard: { suit: 'H', rank: 1 }, autoMode: false,
+        lastActionTime: 0
+    },
+    
+    selection: { suit: 'H', rank: 1 },
+
+    start() {
+        const isCustom = document.getElementById('checkCustom').checked;
+        let initialPool = [];
+        
+        // V10.2 自定义逻辑
+        if (isCustom) {
+            const checkboxes = document.querySelectorAll('.rule-chk:checked');
+            initialPool = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            
+            if (initialPool.length < 2) {
+                alert("请至少选择两项规则，以确保规则切换功能正常运作！");
+                return;
+            }
+            
+            // 保存自定义配置
+            localStorage.setItem('wcst_custom_rules', JSON.stringify(initialPool));
+        } else {
+            const p = parseInt(document.getElementById('phaseSelect').value);
+            const w = document.getElementById('checkWild').checked;
+            initialPool = [...PHASES[p]];
+            if (w) initialPool = initialPool.concat(Object.keys(WILDCARD_RULES).map(Number));
+        }
+
+        const cfg = {
+            phase: isCustom ? 'CUSTOM' : parseInt(document.getElementById('phaseSelect').value),
+            goal: document.getElementById('goalSelect').value,
+            wild: isCustom ? false : document.getElementById('checkWild').checked,
+            dynamic: document.getElementById('checkDynamic').checked,
+            noise: document.getElementById('checkNoise').checked,
+            noiseMode: document.getElementById('noiseModeSelect').value,
+            auto: document.getElementById('checkAuto').checked,
+            custom: isCustom
+        };
+
+        this.state = {
+            active: true, config: cfg,
+            pool: initialPool, usedPool: [],
+            currentRule: null, previousRule: null,
+            streak: 0, thresholdBase: 5, currentThreshold: 5,
+            logs: [], turn: 0, lastCard: null,
+            switchTime: 0, adaptTimes: [], verifyMode: false,
+            autoCard: { suit: 'H', rank: 1 }, autoMode: cfg.auto,
+            lastActionTime: performance.now(),
+            dynamicRules: {}   // id -> rule def, for dynamic wildcard rules
+        };
+
+        ui.closeModal('configModal');
+        ui.toggleAutoUI(cfg.auto);
+        
+        this.drawNewRule(true);
+        if (cfg.auto) this.dealCard();
+        
+        document.getElementById('logBox').innerHTML = '';
+        this.logSystem("实验启动。请根据反馈推断规则。");
+        if(cfg.custom) this.logSystem("⚠️ 当前为自定义规则模式");
+        
+        ui.render();
+    },
+
+    dealCard() {
+        const suits = ['H','D','S','C'];
+        this.state.autoCard = {
+            suit: suits[Math.floor(Math.random()*4)],
+            rank: Math.floor(Math.random()*13)+1
+        };
+        ui.renderAutoCard();
+    },
+
+    drawNewRule(isFirst = false) {
+        // ── 动态外卡抽取判断（30% 概率，非首次切换时生效）──
+        if (!isFirst && this.state.config.dynamic && Math.random() < 0.30) {
+            const prevDef = this.state.currentRule ? this.getRuleDef(this.state.currentRule) : null;
+            const prevName = prevDef ? prevDef.name : '';
+            const dynRule = generateDynamicRule(prevName);
+            this.state.dynamicRules[dynRule.id] = dynRule;
+
+            if (!isFirst) this.state.previousRule = this.state.currentRule;
+            this.state.currentRule = dynRule.id;
+            this.state.streak = 0;
+            const variation = Math.floor(Math.random() * 3);
+            this.state.currentThreshold = Math.max(3, this.state.thresholdBase + variation - 1);
+            this.state.switchTime = performance.now();
+            console.log(`[Sys] Dynamic Rule: ${dynRule.name}, Threshold: ${this.state.currentThreshold}`);
+            ui.updateDifficulty();
+            return;
+        }
+
+        if (this.state.pool.length === 0) {
+            if (this.state.usedPool.length === 0) {
+                // 池空了，重建逻辑
+                if (this.state.config.custom) {
+                    const checkboxes = document.querySelectorAll('.rule-chk:checked');
+                    this.state.pool = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                } else {
+                    let base = [...PHASES[this.state.config.phase]];
+                    if (this.state.config.wild) base = base.concat(Object.keys(WILDCARD_RULES).map(Number));
+                    this.state.pool = base;
+                }
+            } else { 
+                this.state.pool = [...this.state.usedPool]; 
+                this.state.usedPool = []; 
+            }
+        }
+        
+        // 强制防重复（仅对数字ID规则生效，动态规则不入池）
+        if (!isFirst && this.state.currentRule && typeof this.state.currentRule === 'number') {
+            const idx = this.state.pool.indexOf(this.state.currentRule);
+            if (idx > -1) { 
+                this.state.pool.splice(idx, 1); 
+                this.state.usedPool.push(this.state.currentRule); 
+            }
+        }
+        
+        // 极端防死锁
+        if (this.state.pool.length === 0) {
+            if (this.state.config.custom) {
+                const checkboxes = document.querySelectorAll('.rule-chk:checked');
+                 this.state.pool = Array.from(checkboxes).map(cb => parseInt(cb.value)).filter(r => r !== this.state.currentRule);
+                 if(this.state.pool.length===0) this.state.pool = [this.state.currentRule];
+            } else {
+                 let base = [...PHASES[this.state.config.phase]];
+                 if (this.state.config.wild) base = base.concat(Object.keys(WILDCARD_RULES).map(Number));
+                 this.state.pool = base.filter(r => r !== this.state.currentRule);
+            }
+        }
+
+        const idx = Math.floor(Math.random() * this.state.pool.length);
+        const ruleId = this.state.pool[idx];
+        
+        this.state.pool.splice(idx, 1);
+        this.state.usedPool.push(ruleId);
+
+        if (!isFirst) this.state.previousRule = this.state.currentRule;
+        
+        this.state.currentRule = ruleId;
+        this.state.streak = 0;
+        const variation = Math.floor(Math.random() * 3); 
+        this.state.currentThreshold = Math.max(3, this.state.thresholdBase + variation - 1);
+        
+        if (!isFirst) this.state.switchTime = performance.now();
+        
+        console.log(`[Sys] Rule Switched: ${ruleId}, Threshold: ${this.state.currentThreshold}`);
+        ui.updateDifficulty();
+    },
+
+    submit(dir) {
+        if (!this.state.active) return;
+
+        const now = performance.now();
+        const rt = now - this.state.lastActionTime;
+        this.state.lastActionTime = now;
+
+        const s = this.state.autoMode ? this.state.autoCard.suit : this.selection.suit;
+        const r = this.state.autoMode ? this.state.autoCard.rank : this.selection.rank;
+        const rule = this.getRuleDef(this.state.currentRule);
+        
+        const expected = rule.func(s, r, this.state.lastCard);
+        const realCorrect = (dir === expected);
+        
+        if (this.state.verifyMode) {
+            this.logSystem(`🔬 验证：${realCorrect?'符合':'违背'}当前规则`);
+            ui.showFeedback(realCorrect, true);
+            this.state.verifyMode = false;
+            ui.updateVerifyBtn(false);
+            this.state.logs.push({ turn: this.state.turn, isVerify: true, realCorrect, suit:s, rank:r, dir, rt, ruleId: this.state.currentRule });
+            this.postSubmit(s, r);
+            return;
+        }
+
+        let displayCorrect = realCorrect;
+        let isNoised = false;
+        let isPerseverative = false;
+
+        if (!realCorrect && this.state.previousRule) {
+            const prevRule = this.getRuleDef(this.state.previousRule);
+            const prevExpected = prevRule.func(s, r, this.state.lastCard);
+            if (dir === prevExpected) isPerseverative = true;
+        }
+
+        if (this.state.config.noise && Math.random() < 0.1) {
+            displayCorrect = !realCorrect;
+            isNoised = true;
+        }
+
+        this.state.turn++;
+        let adaptationCompleted = false;
+
+        if (realCorrect) {
+            this.state.streak++;
+            if (this.state.streak === 3 && this.state.switchTime > 0) {
+                const adaptDuration = now - this.state.switchTime;
+                this.state.adaptTimes.push({ ruleId: this.state.currentRule, duration: adaptDuration });
+                this.state.switchTime = 0; 
+                adaptationCompleted = true;
+                
+                if (adaptDuration < 2000) this.state.thresholdBase = Math.max(3, this.state.thresholdBase - 1);
+                else if (adaptDuration > 6000) this.state.thresholdBase = Math.min(6, this.state.thresholdBase + 1);
+            }
+        } else {
+            this.state.streak = 0;
+        }
+
+        let doSwitch = false;
+        // V10.3: 仅当规则池实际包含多条规则时才触发切换，避免单规则场景下的虚假切换记录
+        const totalRulesAvailable = this.state.pool.length + this.state.usedPool.length;
+        if (this.state.streak >= this.state.currentThreshold && totalRulesAvailable > 1) doSwitch = true;
+
+        this.state.logs.push({
+            turn: this.state.turn, cardStr: ui.formatCard(s, r),
+            userDir: dir, realCorrect, displayCorrect, isNoised,
+            ruleId: this.state.currentRule, isSwitch: doSwitch,
+            isPerseverative, suit: s, rank: r, rt, adaptationCompleted
+        });
+
+        ui.showFeedback(displayCorrect, false, isNoised);
+        ui.addLogEntry(this.state.logs[this.state.logs.length-1], rt);
+        ui.updateLastRt(rt);
+        this.postSubmit(s, r);
+
+        if (doSwitch) this.drawNewRule();
+    },
+    
+    postSubmit(s, r) {
+        this.state.lastCard = { suit: s, rank: r };
+        if (this.state.autoMode) setTimeout(() => this.dealCard(), 150);
+        if (this.state.streak >= 3) ui.updateVerifyBtn(true); else ui.updateVerifyBtn(false);
+        ui.render();
+    },
+
+    verify() {
+        if (this.state.streak < 3) return;
+        this.state.verifyMode = true;
+        this.logSystem("🔬 进入验证模式...");
+    },
+
+    getRuleDef(id) { 
+        if (typeof id === 'string' && id.startsWith('dyn_')) {
+            return this.state.dynamicRules[id] || { name:'未知动态规则', func:()=>'Right', isDynamic:true };
+        }
+        return BASE_RULES[id] || WILDCARD_RULES[id]; 
+    },
+
+    toggleAutoMode() {
+        this.state.autoMode = !this.state.autoMode;
+        ui.toggleAutoUI(this.state.autoMode);
+        if(this.state.autoMode && this.state.active) this.dealCard();
+    },
+    
+    toggleFocus(forceState) {
+        const body = document.body;
+        const shouldBeFocus = (typeof forceState === 'boolean') ? forceState : !body.classList.contains('focus-mode');
+        if(shouldBeFocus) body.classList.add('focus-mode');
+        else body.classList.remove('focus-mode');
+    },
+
+    logSystem(msg) {
+        const box = document.getElementById('logBox');
+        box.innerHTML = `<div style="padding:5px; color:#888; border-bottom:1px solid #333; font-style:italic;">${msg}</div>` + box.innerHTML;
+    },
+
+    end() {
+        if (this.state.logs.filter(l => !l.isVerify).length === 0) {
+            alert("尚无训练数据，请先进行几轮判断后再结束。");
+            return;
+        }
+        this.state.active = false;
+        this.toggleFocus(false);
+        document.getElementById('gameInterface').style.display = 'none';
+        document.getElementById('reportSection').style.display = 'block';
+        report.generate();
+    },
+
+    continue() {
+        document.getElementById('reportSection').style.display = 'none';
+        document.getElementById('gameInterface').style.display = 'grid';
+        this.state.active = true;
+        if (this.state.autoMode) this.dealCard();
+        this.logSystem("▶ 已返回游戏，继续当前训练。");
+        ui.render();
+    }
+};
+
+const ui = {
+    init() {
+        const div = document.getElementById('rankContainer');
+        [1,2,3,4,5,6,7,8,9,10,11,12,13].forEach(r => {
+            div.innerHTML += `<button class="opt-btn rank" id="r_${r}" onclick="ui.selectRank(${r})">${this.formatRank(r)}</button>`;
+        });
+        
+        // V10.3: 构建自定义规则界面（含悬停提示）
+        const grid = document.getElementById('customGrid');
+        const mkChk = (id, def) => `
+            <label class="chk-label" title="${def.name}">
+                <input type="checkbox" class="rule-chk" value="${id}" ${def.isWild?'data-wild="true"':''}> 
+                ${def.isWild?'🃏 ':''}${def.name}
+            </label>`;
+        
+        let html = '';
+        Object.keys(BASE_RULES).forEach(k => html += mkChk(k, BASE_RULES[k]));
+        Object.keys(WILDCARD_RULES).forEach(k => html += mkChk(k, WILDCARD_RULES[k]));
+        grid.innerHTML = html;
+
+        // 加载上次自定义配置；若无历史记录则默认勾选阶段1规则(1,3,5)，避免空白状态
+        const saved = JSON.parse(localStorage.getItem('wcst_custom_rules') || '[]');
+        if (saved.length > 0) {
+            saved.forEach(id => {
+                const el = document.querySelector(`.rule-chk[value="${id}"]`);
+                if(el) el.checked = true;
+            });
+        } else {
+            // 默认勾选入门规则，确保用户开始时至少有可用规则
+            [1, 3, 5].forEach(id => {
+                const el = document.querySelector(`.rule-chk[value="${id}"]`);
+                if(el) el.checked = true;
+            });
+        }
+
+        document.addEventListener('keydown', e => {
+            if (!game.state.active) return;
+            if(e.key==='ArrowLeft') game.submit('Left');
+            if(e.key==='ArrowRight') game.submit('Right');
+            if(e.key.toLowerCase() === 'v') game.verify();
+            if(e.key.toLowerCase() === 'f') { e.preventDefault(); game.toggleFocus(); }
+            if(e.key.toLowerCase() === 'q') inquiry.trigger();
+            if(e.key === 'Escape') game.toggleFocus(false);
+        });
+    },
+
+    render() {
+        document.getElementById('dispStreak').innerText = game.state.streak;
+        if (!game.state.autoMode) this.highlightSelectors();
+    },
+
+    // V10.3 新增方法
+    toggleCustomUI(checked) {
+        const customSec = document.getElementById('customRuleSection');
+        const presetSec = document.getElementById('presetSection');
+        
+        customSec.style.display = checked ? 'block' : 'none';
+        if(checked) presetSec.classList.add('disabled-sec');
+        else presetSec.classList.remove('disabled-sec');
+    },
+
+    // V10.4: 显示/隐藏噪声提示强度选项
+    toggleNoiseModeVis(checked) {
+        document.getElementById('noiseModeRow').style.display = checked ? 'flex' : 'none';
+    },
+    
+    selectAllRules() {
+        document.querySelectorAll('.rule-chk').forEach(c => c.checked = true);
+    },
+
+    toggleAutoUI(isAuto) {
+        document.getElementById('manualSelectors').style.display = isAuto ? 'none' : 'block';
+        document.getElementById('autoCardArea').style.display = isAuto ? 'flex' : 'none';
+        document.getElementById('modeBtn').classList.toggle('active', isAuto);
+    },
+
+    renderAutoCard() {
+        const c = game.state.autoCard;
+        const el = document.getElementById('bigCard');
+        const isRed = ['H','D'].includes(c.suit);
+        el.className = `auto-card ${isRed?'red':'black'}`;
+        document.getElementById('bigCardSuit').innerText = {H:'♥',D:'♦',S:'♠',C:'♣'}[c.suit];
+        document.getElementById('bigCardRank').innerText = this.formatRank(c.rank);
+        const last = game.state.lastCard;
+        if (last) {
+            document.getElementById('prevCardHint').innerText = `上张: ${{H:'♥',D:'♦',S:'♠',C:'♣'}[last.suit]}${this.formatRank(last.rank)}`;
+        }
+    },
+
+    showFeedback(correct, isVerify, isNoised) {
+        const el = document.getElementById('feedbackOverlay');
+        const txt = document.getElementById('feedbackText');
+        if (isVerify) {
+            txt.innerText = correct ? "符合" : "违背"; txt.style.color = "#8e44ad";
+        } else if (isNoised) {
+            const mode = game.state.config.noiseMode || 'directional';
+            if (mode === 'none') {
+                // 无提示：与正常反馈完全相同，不暴露噪声
+                txt.innerText = correct ? '✅' : '❌';
+                txt.style.color = correct ? 'var(--success)' : 'var(--error)';
+            } else if (mode === 'neutral') {
+                // 中性提示：仅显示问号，不含对错方向
+                txt.innerText = '？'; txt.style.color = '#aaa';
+            } else {
+                // 方向提示（默认）：显示带问号的对错图标
+                txt.innerText = correct ? '✅?' : '❌?';
+                txt.style.color = correct ? 'var(--success)' : 'var(--error)';
+            }
+        } else {
+            txt.innerText = correct ? '✅' : '❌';
+            txt.style.color = correct ? 'var(--success)' : 'var(--error)';
+        }
+        el.style.opacity = 1; el.style.transform = "translate(-50%,-50%) scale(1)";
+        setTimeout(() => { el.style.opacity = 0; el.style.transform = "translate(-50%,-50%) scale(0.5)"; }, 600);
+    },
+
+    addLogEntry(l, rt) {
+        const box = document.getElementById('logBox');
+        let icon = l.displayCorrect ? '✅' : '❌';
+        if (l.isNoised) icon += '🌪️';
+        if (l.isPerseverative) icon += '🔒';
+        const html = `<div class="log-item"><span style="color:#666">#${l.turn}</span><span style="font-weight:bold; width:50px;">${l.cardStr}</span><span>${l.userDir==='Left'?'⬅':'➡'}</span><span>${icon}</span><span style="font-size:0.75rem; color:#888;">${Math.round(rt)}ms</span></div>`;
+        box.innerHTML = html + box.innerHTML;
+    },
+
+    updateLastRt(ms) {
+        const el = document.getElementById('lastRt');
+        el.innerText = Math.round(ms) + 'ms';
+        el.style.color = ms < 800 ? '#2ecc71' : (ms > 2000 ? '#e74c3c' : '#aaa');
+    },
+
+    updateVerifyBtn(active) {
+        const btn = document.getElementById('verifyBtn');
+        if(active) btn.classList.add('active'); else btn.classList.remove('active');
+    },
+    
+    updateDifficulty() {
+        const diff = 8 - game.state.thresholdBase;
+        document.getElementById('diffVal').innerText = `L${diff}`;
+        document.getElementById('diffBar').style.width = `${Math.min(100, diff*20)}%`;
+    },
+
+    selectSuit(s) { game.selection.suit = s; this.render(); },
+    selectRank(r) { game.selection.rank = r; this.render(); },
+    highlightSelectors() {
+        document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`s_${game.selection.suit}`).classList.add('active');
+        document.getElementById(`r_${game.selection.rank}`).classList.add('active');
+    },
+
+    openConfig() { document.getElementById('configModal').style.display = 'flex'; },
+    openHelp() { document.getElementById('helpModal').style.display = 'flex'; },
+    showHistory() { document.getElementById('historyModal').style.display = 'flex'; report.drawHistoryChart(); },
+    closeModal(id) { document.getElementById(id).style.display = 'none'; },
+    formatCard(s, r) { return `${{H:'♥',D:'♦',S:'♠',C:'♣'}[s]}${this.formatRank(r)}`; },
+    formatRank(r) { return {1:'A',11:'J',12:'Q',13:'K'}[r] || r; }
+};
+
+const report = {
+    generate() {
+        const logs = game.state.logs;
+        const total = logs.filter(l => !l.isVerify).length;
+        if(total === 0) return;
+
+        const correctCount = logs.filter(l => l.realCorrect && !l.isVerify).length;
+        const acc = ((correctCount/total)*100).toFixed(1);
+        const adapts = game.state.adaptTimes; 
+        const avgTime = adapts.length ? (adapts.reduce((a,b)=>a+b.duration,0)/adapts.length/1000).toFixed(2) : 0;
+        const allRts = logs.filter(l => !l.isVerify).map(l => l.rt);
+        const avgRt = allRts.length ? (allRts.reduce((a,b)=>a+b,0)/allRts.length).toFixed(0) : 0;
+
+        const ruleStats = {};
+        logs.forEach(l => {
+            if(l.isVerify) return;
+            if(!ruleStats[l.ruleId]) ruleStats[l.ruleId] = { total:0, correct:0, rtSum:0 };
+            ruleStats[l.ruleId].total++;
+            if(l.realCorrect) ruleStats[l.ruleId].correct++;
+            ruleStats[l.ruleId].rtSum += l.rt;
+        });
+        
+        let ruleTableRows = '';
+        for (let rid in ruleStats) {
+            const s = ruleStats[rid];
+            const ruleDef = game.getRuleDef(rid);
+            const rAcc = ((s.correct/s.total)*100).toFixed(0);
+            const rRt = (s.rtSum/s.total).toFixed(0);
+            const prefix = ruleDef.isDynamic ? '🔄 ' : (ruleDef.isWild ? '🃏 ' : '');
+            ruleTableRows += `<tr><td>${prefix}${ruleDef.name}</td><td>${s.total}</td><td>${rAcc}%</td><td>${rRt}ms</td></tr>`;
+        }
+
+        const g = game.state.config.goal;
+        let goalMet = false;
+        if(g==='switch_5' && logs.filter(l=>l.isSwitch).length >= 5) goalMet = true;
+        if(g==='acc_80' && acc >= 80) goalMet = true;
+        if(g==='adapt_2s' && avgTime < 2 && adapts.length>0) goalMet = true;
+        if(g==='none') goalMet = true;
+
+        this.saveHistory({ date: new Date().toLocaleDateString(), acc, time: avgTime, rt: avgRt });
+
+        const timeline = logs.map(l => {
+            let title = `R${l.turn} | ${l.cardStr || '验证'} | 规则: ${game.getRuleDef(l.ruleId).name} | RT:${Math.round(l.rt)}ms`;
+            if (l.isVerify) title += ' | 验证';
+            if (l.isNoised) title += ' | 噪声';
+            if (l.isPerseverative) title += ' | 定势';
+            if (l.isSwitch) title += ' | ⚡切换点';
+            
+            if (l.isVerify) return `<div class="dot" style="background:#8e44ad" title="${title}">🔬</div>`;
+            return `<div class="dot ${l.realCorrect?'correct':'wrong'} ${l.isSwitch?'switch':''}" 
+                    style="${l.isNoised?'border:2px solid orange':''} ${l.isPerseverative?'border:2px solid #fff':''}"
+                    title="${title}"></div>`;
+        }).join('');
+
+        let switchHtml = '';
+        let switchChain = [];
+        let lastRuleId = logs[0]?.ruleId;
+        if(logs.length>0) switchChain.push({type:'start', ruleId: lastRuleId});
+        
+        for(let i=0; i<logs.length; i++) {
+            if(logs[i].isSwitch) {
+                const fromRuleId = lastRuleId;
+                const nextLog = logs[i+1];
+                if(nextLog) {
+                    const toRuleId = nextLog.ruleId;
+                    switchChain.push({type:'switch', turn: logs[i].turn, from: fromRuleId, to: toRuleId});
+                    lastRuleId = toRuleId;
+                }
+            }
+        }
+        
+        let adaptIndex = 0;
+        switchChain.forEach(item => {
+            if(item.type==='start') {
+                const r = game.getRuleDef(item.ruleId);
+                const pfx = r.isDynamic ? '🔄 ' : (r.isWild ? '🃏 ' : '');
+                switchHtml += `<div class="switch-chain-item" style="border-left-color: #27ae60;"><span>🚀 初始规则</span><span>${pfx}${r.name}</span></div>`;
+            } else {
+                const f = game.getRuleDef(item.from);
+                const t = game.getRuleDef(item.to);
+                const fPfx = f.isDynamic ? '🔄 ' : (f.isWild ? '🃏 ' : '');
+                const tPfx = t.isDynamic ? '🔄 ' : (t.isWild ? '🃏 ' : '');
+                let adaptStr = '';
+                if(adaptIndex < adapts.length) {
+                    adaptStr = ` (适应 ${(adapts[adaptIndex].duration/1000).toFixed(2)}s)`;
+                    adaptIndex++;
+                }
+                switchHtml += `<div class="switch-chain-item" style="border-left-color: #f39c12;">
+                    <span>🔄 切换 (R${item.turn})</span>
+                    <span>${fPfx}${f.name} ➡ ${tPfx}${t.name}${adaptStr}</span>
+                </div>`;
+            }
+        });
+
+        let auditRows = '';
+        logs.forEach(l => {
+            const r = game.getRuleDef(l.ruleId);
+            const rPfx = r.isDynamic ? '🔄' : (r.isWild ? '🃏' : '');
+            auditRows += `<tr>
+                <td>${l.turn}</td>
+                <td>${l.cardStr}</td>
+                <td>${l.userDir}</td>
+                <td>${rPfx}${r.name}</td>
+                <td>${l.realCorrect?'✅':'❌'}</td>
+                <td>${l.displayCorrect?'✅':'❌'}</td>
+                <td>${l.isNoised?'🌪️':''}</td>
+                <td>${l.isPerseverative?'🔒':''}</td>
+                <td>${l.isSwitch?'⚡':''}</td>
+                <td>${Math.round(l.rt)}ms</td>
+            </tr>`;
+        });
+
+        const html = `
+            <div style="background:#fff; padding:30px; border-radius:12px; max-width:1000px; margin:0 auto; color:#333;">
+                ${goalMet ? '<div style="background:#d4edda; color:#155724; padding:15px; border-radius:8px; margin-bottom:20px; font-weight:bold; text-align:center;">🏆 恭喜！训练目标已达成！</div>' : ''}
+                
+                <h2 style="margin-top:0;">📊 认知巅峰实验报告</h2>
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+                    <div style="background:#f8f9fa; padding:15px; border-radius:8px;">
+                        <h3>核心指标</h3>
+                        <p>正确率: <b style="font-size:1.2em">${acc}%</b></p>
+                        <p>平均RT: <b>${avgRt}ms</b></p>
+                        <p>平均适应: <b style="color:${avgTime<2?'#27ae60':'#e67e22'}">${avgTime}s</b></p>
+                    </div>
+                    <div style="background:#f8f9fa; padding:15px; border-radius:8px;">
+                        <h3>规则矩阵</h3>
+                        <div style="max-height:150px; overflow-y:auto;">
+                            <table class="data-table" style="margin-top:0;">
+                                <thead><tr><th>规则</th><th>次数</th><th>正确率</th><th>RT</th></tr></thead>
+                                <tbody>${ruleTableRows}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>时间轴</h3>
+                <div class="timeline">${timeline}</div>
+
+                <h3>规则切换链</h3>
+                <div style="margin-top:10px; max-height:200px; overflow-y:auto;">${switchHtml}</div>
+                
+                <h3>📋 审计日志 (机制验证)</h3>
+                <div style="max-height:200px; overflow-y:auto; border:1px solid #eee;">
+                    <table class="data-table">
+                        <thead><tr><th>R</th><th>Card</th><th>Dir</th><th>Rule</th><th>Real</th><th>Disp</th><th>Noise</th><th>Persev</th><th>Switch</th><th>RT</th></tr></thead>
+                        <tbody>${auditRows}</tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
+                    <button class="btn-outline" style="padding:10px 20px; border-color:#555;" onclick="location.reload()">🔄 重新开始</button>
+                    <button class="btn-start" style="padding:10px 24px;" onclick="game.continue()">▶ 返回游戏继续</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('reportSection').innerHTML = html;
+    },
+
+    saveHistory(data) {
+        let h = JSON.parse(localStorage.getItem('wcst_lab_history') || '[]');
+        h.push(data); if(h.length > 20) h.shift();
+        localStorage.setItem('wcst_lab_history', JSON.stringify(h));
+    },
+
+    drawHistoryChart() {
+        const cvs = document.getElementById('historyChart');
+        const ctx = cvs.getContext('2d');
+        const h = JSON.parse(localStorage.getItem('wcst_lab_history') || '[]');
+        
+        cvs.width = 600; cvs.height = 300;
+        ctx.clearRect(0,0,600,300);
+        ctx.fillStyle = "#222"; ctx.fillRect(0,0,600,300);
+        
+        if (h.length < 2) {
+            ctx.font = "16px sans-serif"; ctx.fillStyle = "#666";
+            ctx.fillText("需完成至少两次训练以生成趋势图", 180, 150); return;
+        }
+
+        const drawLine = (key, color, max, offset) => {
+            ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+            const step = 550 / (h.length - 1);
+            h.forEach((d, i) => {
+                const val = parseFloat(d[key]);
+                const y = 280 - (val / max) * 250;
+                const x = 25 + i * step;
+                if(i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                ctx.fillStyle=color; ctx.fillRect(x-3,y-3,6,6);
+            });
+            ctx.stroke();
+            ctx.fillStyle = color; ctx.fillText(key.toUpperCase(), 550, 280 - (h[h.length-1][key]/max)*250 + offset);
+        };
+
+        drawLine('acc', '#27ae60', 100, -10); 
+        drawLine('rt', '#f39c12', 2000, 10);
+        
+        ctx.beginPath(); ctx.strokeStyle = '#3498db'; ctx.lineWidth = 2;
+        const step = 550 / (h.length - 1);
+        h.forEach((d, i) => {
+            const val = Math.min(10, parseFloat(d.time)); 
+            const y = 280 - (val / 10) * 250;
+            const x = 25 + i * step;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            ctx.fillStyle = '#3498db';
+            ctx.fillRect(x - 3, y - 3, 6, 6);
+        });
+        ctx.stroke();
+        ctx.fillStyle = '#3498db';
+        ctx.fillText('TIME', 550, 280 - (Math.min(10, h[h.length-1].time)/10) * 250);
+    }
+};
+
+const inquiry = {
+    trigger() {
+        if (!game.state.active) return;
+        const last = game.state.logs[game.state.logs.length - 1]; if(!last) return;
+        const rule = game.getRuleDef(last.ruleId);
+        document.getElementById('inquiryContent').innerText = 
+`回合：${last.turn}
+牌面：${last.cardStr}
+规则：${rule.name}
+判定：${last.realCorrect ? '正确' : '错误'} ${last.isNoised ? '(噪声干扰)' : ''}`;
+        document.getElementById('inquiryModal').style.display = 'flex';
+    },
+    reportError() { alert("已记录系统偏差。"); ui.closeModal('inquiryModal'); }
+};
+
+ui.init();
+</script>
+</body>
+</html>
