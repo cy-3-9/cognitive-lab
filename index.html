@@ -191,6 +191,57 @@
         .qa-q { padding: 12px 16px; font-size: 0.88rem; color: #ccc; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .qa-q::after { content: '▾'; color: #666; }
         .qa-a { padding: 0 16px 13px; font-size: 0.87rem; color: #999; line-height: 1.7; }
+        
+        /* 手机端适配 */
+        @media (max-width: 600px) {
+            .game-grid {
+                grid-template-columns: 1fr; /* 左右堆叠 */
+            }
+            .left-panel, .right-panel {
+                border-right: none;
+                border-left: none;
+                padding: 15px;
+            }
+            .auto-card {
+                width: 90%;
+                max-width: 280px;
+                height: auto;
+                aspect-ratio: 2/3; /* 保持扑克牌比例 */
+            }
+            .card-suit {
+                font-size: 5rem;
+            }
+            .card-rank {
+                font-size: 2.5rem;
+            }
+            .drop-zone {
+                height: 100px;
+                font-size: 1rem;
+            }
+            button {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            .control-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .right-panel .btn-outline {
+                padding: 10px 0;
+            }
+            .log-box {
+                max-height: 200px;
+            }
+            /* 猜测区域适配 */
+            #guessArea {
+                margin-top: 15px;
+            }
+            #guessArea select, #guessArea input {
+                width: 100%;
+                margin-bottom: 8px;
+                box-sizing: border-box; /* 确保不溢出 */
+            }
+        }
     </style>
 </head>
 <body>
@@ -256,6 +307,30 @@
             
             <div class="log-box" id="logBox">
                 <div style="text-align:center; color:#666; padding:20px;">等待实验开始...</div>
+            </div>
+
+            <div id="guessArea" style="margin-top:15px; background:#2a2a2a; padding:10px; border-radius:6px; border:1px solid #333;">
+                <div style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">🧠 我的猜测</div>
+                <select id="guessFixedSelect" style="width:100%; padding:8px; background:#444; color:#fff; border:none; border-radius:4px; margin-bottom:8px; box-sizing:border-box;">
+                    <option value="">选择固定规则（或在下框自定义）</option>
+                    <option value="奇左偶右">1. 奇左偶右</option>
+                    <option value="奇右偶左">2. 奇右偶左</option>
+                    <option value="红左黑右">3. 红左黑右</option>
+                    <option value="红右黑左">4. 红右黑左</option>
+                    <option value="小左大右">5. 小左大右</option>
+                    <option value="小右大左">6. 小右大左</option>
+                    <option value="质左合右">7. 质左合右</option>
+                    <option value="红奇或黑偶左">8. 红奇或黑偶左</option>
+                    <option value="红偶或黑奇左">9. 红偶或黑奇左</option>
+                    <option value="比上一张大放左">10. 比上一张大放左</option>
+                    <option value="同花色放左">11. 同花色放左</option>
+                    <option value="点数是3的倍数放左">12. 点数是3的倍数放左</option>
+                    <option value="同色放左">13. 同色放左</option>
+                    <option value="比上一张小放左">14. 比上一张小放左</option>
+                    <option value="点数和上一张相同放左">15. 点数和上一张相同放左</option>
+                </select>
+                <input type="text" id="guessCustomInput" placeholder="自定义猜测（如“点数是5的倍数放左”）" style="width:100%; padding:8px; background:#444; color:#fff; border:none; border-radius:4px; box-sizing:border-box;">
+                <div style="font-size:0.7rem; color:#888; margin-top:5px;">选择固定规则或输入自定义猜测，每回合自动记录。</div>
             </div>
 
             <div style="margin-top:auto; display:flex; gap:10px;">
@@ -392,7 +467,6 @@
 
 <div id="feedbackOverlay"><div id="feedbackText">✅</div></div>
 
-<!-- ===== 使用说明弹窗 ===== -->
 <div id="helpModal" class="modal">
   <div class="modal-content">
     <div class="help-header">
@@ -404,7 +478,6 @@
     </div>
     <div class="help-body">
 
-      <!-- 目录 -->
       <div class="help-toc">
         <h3>📋 目录</h3>
         <ol>
@@ -421,7 +494,6 @@
         </ol>
       </div>
 
-      <!-- 一、概述 -->
       <div class="help-section" id="h-overview">
         <h2>一、概述与核心价值</h2>
         <p>本工具专为训练和测量<strong>认知灵活性</strong>而设计 —— 即在不同规则间快速切换、适应变化的能力。它融合了自适应难度、噪声模拟、主动验证和详细复盘等功能，让您能够像科学家一样观察自己的思维过程，并精准强化弱点。</p>
@@ -455,7 +527,6 @@
 
       <hr class="help-divider">
 
-      <!-- 二、规则库 -->
       <div class="help-section" id="h-rules">
         <h2>二、规则库详解</h2>
         <p>工具内置 <strong>15 条</strong>分类规则，分为基础规则（1–9）和需要上下文的外卡规则（10–15）。</p>
@@ -496,7 +567,6 @@
 
       <hr class="help-divider">
 
-      <!-- 三、核心机制 -->
       <div class="help-section" id="h-mechanism">
         <h2>三、核心机制详解</h2>
 
@@ -521,13 +591,12 @@
 
       <hr class="help-divider">
 
-      <!-- 四、界面布局 -->
       <div class="help-section" id="h-layout">
         <h2>四、界面布局</h2>
         <p>页面主要分为左右两个区域，各司其职：</p>
         <ul>
           <li><strong>左侧（操作区）</strong>：发牌区（自动模式下显示大牌面，手动模式下显示花色/点数选择器）+ 底部的左/右分类区域。所有核心判断操作在此完成。</li>
-          <li><strong>右侧（数据区）</strong>：实时显示连对计数、上轮耗时和自适应难度条，下方为实时日志流，底部为功能按钮（趋势、专注、质询、结束）。</li>
+          <li><strong>右侧（数据区）</strong>：包含状态面板（连对、耗时、难度）、日志流、<strong>我的猜测记录区（新功能）</strong>，以及底部功能按钮。</li>
           <li><strong>顶部工具栏</strong>：包含新实验配置按钮、自动/手动发牌切换和验证按钮。</li>
           <li><strong>专注模式</strong>：按 <span class="key-badge">F</span> 键可隐藏右侧面板，进入无干扰的纯操作视图。</li>
         </ul>
@@ -535,7 +604,6 @@
 
       <hr class="help-divider">
 
-      <!-- 五、配置说明 -->
       <div class="help-section" id="h-config">
         <h2>五、配置说明</h2>
         <p>点击左上角 <strong>"⚙️ 新实验"</strong> 打开配置窗口，可调整以下参数：</p>
@@ -579,12 +647,14 @@
 
       <hr class="help-divider">
 
-      <!-- 六、操作指南 -->
       <div class="help-section" id="h-operation">
         <h2>六、操作指南</h2>
 
         <h3>基本操作</h3>
         <p>自动发牌模式下，屏幕中央显示一张大扑克牌。点击下方的 <strong>"👈 左分类"</strong> 或 <strong>"右分类 👉"</strong>，或使用键盘快捷键完成判断。每次判断后屏幕中央会闪现大尺寸的反馈图标。</p>
+        
+        <h3>记录猜测（我的猜测）</h3>
+        <p>在右侧面板的“我的猜测”区域，您可以通过下拉菜单选择固定的 15 条规则，或在文本框中输入您自定义的动态规则猜测（如“点数是5的倍数”）。每次您做出判断时，系统会自动将您当前的猜测一同记录到日志中，方便在实验结束后对比您的思考轨迹与真实规则的差异。<strong>注意：自定义文本框的输入优先级高于下拉菜单</strong>。</p>
 
         <h3>键盘快捷键</h3>
         <ul>
@@ -613,7 +683,6 @@
 
       <hr class="help-divider">
 
-      <!-- 七、报告解读 -->
       <div class="help-section" id="h-report">
         <h2>七、复盘报告解读</h2>
 
@@ -634,14 +703,13 @@
         <p>完整列出初始规则及每一次切换的回合、切换前后的规则名称，以及该次规则的适应时间（若已完成适应）。这有助于还原整场训练的规则演变过程。</p>
 
         <h3>审计日志</h3>
-        <p>逐条列出所有回合的原始数据：回合号、牌面、您的选择、当前规则、真实结果、显示结果（可能被噪声反转）、噪声标记（🌪️）、持续性错误标记（🔒）、切换标记（⚡）和反应时。此日志确保训练机制的完全透明，您可用其验证系统是否按预期运行。</p>
+        <p>逐条列出所有回合的原始数据：回合号、牌面、您的选择、当前规则、真实结果、显示结果（可能被噪声反转）、噪声标记（🌪️）、持续性错误标记（🔒）、切换标记（⚡）、反应时，以及<strong>您的猜测</strong>。通过对比“真实规则”与“您的猜测”，您可以清晰地看到自己假设的建立和修正过程。此日志确保训练机制的完全透明，您可用其验证系统是否按预期运行。</p>
 
         <div class="help-tip info">报告底部的 <strong>"重新开始"</strong> 按钮会刷新页面并返回配置弹窗，之前的历史趋势数据仍会保留。</div>
       </div>
 
       <hr class="help-divider">
 
-      <!-- 八、自定义规则模式 -->
       <div class="help-section" id="h-custom">
         <h2>八、自定义规则模式详解</h2>
 
@@ -657,7 +725,6 @@
 
       <hr class="help-divider">
 
-      <!-- 九、训练建议 -->
       <div class="help-section" id="h-tips">
         <h2>九、训练建议</h2>
 
@@ -690,7 +757,6 @@
 
       <hr class="help-divider">
 
-      <!-- 十、常见问题 -->
       <div class="help-section" id="h-faq">
         <h2>十、常见问题</h2>
 
@@ -746,14 +812,11 @@
       </div>
 
       <div style="text-align:center; padding: 20px 0 10px; color: #555; font-size: 0.82rem;">
-        认知灵活性实验室 v10.3 CUSTOM &nbsp;·&nbsp; 集科学性、透明性与可定制性于一体
+        认知灵活性实验室 v10.4 CUSTOM &nbsp;·&nbsp; 集科学性、透明性与可定制性于一体
       </div>
 
-    </div><!-- end help-body -->
-  </div>
+    </div></div>
 </div>
-<!-- ===== end 使用说明弹窗 ===== -->
-
 <script>
 /** 规则库 - V9.0 扩展版 */
 const BASE_RULES = {
@@ -785,9 +848,9 @@ const WILDCARD_RULES = {
 const PHASES = { 1: [1,3,5], 2: [1,2,3,4,5,6], 3: [1,2,3,4,5,6,7], 4: [1,2,3,4,5,6,7,8,9] };
 
 /** ─────────────────────────────────────────
- *  动态外卡规则生成器 (V10.4)
- *  每次调用 generateDynamicRule() 返回一个全新的规则对象。
- *  规则基于12种模板，参数随机化，保证逻辑清晰、可测试。
+ * 动态外卡规则生成器 (V10.4)
+ * 每次调用 generateDynamicRule() 返回一个全新的规则对象。
+ * 规则基于12种模板，参数随机化，保证逻辑清晰、可测试。
  * ───────────────────────────────────────── */
 let _dynCounter = 0;
 function generateDynamicRule(excludeName) {
@@ -1014,6 +1077,14 @@ const game = {
         ui.updateDifficulty();
     },
 
+    getCurrentGuess() {
+        const fixed = document.getElementById('guessFixedSelect').value;
+        const custom = document.getElementById('guessCustomInput').value.trim();
+        if (custom !== '') return custom;
+        if (fixed !== '') return fixed;
+        return '(未猜)';
+    },
+
     submit(dir) {
         if (!this.state.active) return;
 
@@ -1033,7 +1104,11 @@ const game = {
             ui.showFeedback(realCorrect, true);
             this.state.verifyMode = false;
             ui.updateVerifyBtn(false);
-            this.state.logs.push({ turn: this.state.turn, isVerify: true, realCorrect, suit:s, rank:r, dir, rt, ruleId: this.state.currentRule });
+            this.state.logs.push({ 
+                turn: this.state.turn, isVerify: true, realCorrect, suit:s, 
+                rank:r, dir, rt, ruleId: this.state.currentRule,
+                userGuess: this.getCurrentGuess()
+            });
             this.postSubmit(s, r);
             return;
         }
@@ -1080,7 +1155,8 @@ const game = {
             turn: this.state.turn, cardStr: ui.formatCard(s, r),
             userDir: dir, realCorrect, displayCorrect, isNoised,
             ruleId: this.state.currentRule, isSwitch: doSwitch,
-            isPerseverative, suit: s, rank: r, rt, adaptationCompleted
+            isPerseverative, suit: s, rank: r, rt, adaptationCompleted,
+            userGuess: this.getCurrentGuess()
         });
 
         ui.showFeedback(displayCorrect, false, isNoised);
@@ -1272,7 +1348,7 @@ const ui = {
         let icon = l.displayCorrect ? '✅' : '❌';
         if (l.isNoised) icon += '🌪️';
         if (l.isPerseverative) icon += '🔒';
-        const html = `<div class="log-item"><span style="color:#666">#${l.turn}</span><span style="font-weight:bold; width:50px;">${l.cardStr}</span><span>${l.userDir==='Left'?'⬅':'➡'}</span><span>${icon}</span><span style="font-size:0.75rem; color:#888;">${Math.round(rt)}ms</span></div>`;
+        const html = `<div class="log-item"><span style="color:#666">#${l.turn}</span><span style="font-weight:bold; width:50px;">${l.cardStr || '-'}</span><span>${l.userDir==='Left'?'⬅':'➡'}</span><span>${icon}</span><span style="font-size:0.75rem; color:#888;">${Math.round(rt)}ms</span></div>`;
         box.innerHTML = html + box.innerHTML;
     },
 
@@ -1409,7 +1485,7 @@ const report = {
             const rPfx = r.isDynamic ? '🔄' : (r.isWild ? '🃏' : '');
             auditRows += `<tr>
                 <td>${l.turn}</td>
-                <td>${l.cardStr}</td>
+                <td>${l.cardStr || '-'}</td>
                 <td>${l.userDir}</td>
                 <td>${rPfx}${r.name}</td>
                 <td>${l.realCorrect?'✅':'❌'}</td>
@@ -1418,6 +1494,7 @@ const report = {
                 <td>${l.isPerseverative?'🔒':''}</td>
                 <td>${l.isSwitch?'⚡':''}</td>
                 <td>${Math.round(l.rt)}ms</td>
+                <td style="max-width:150px; word-break:break-all; color:#8e44ad;">${l.userGuess || ''}</td>
             </tr>`;
         });
 
@@ -1425,7 +1502,7 @@ const report = {
             <div style="background:#fff; padding:30px; border-radius:12px; max-width:1000px; margin:0 auto; color:#333;">
                 ${goalMet ? '<div style="background:#d4edda; color:#155724; padding:15px; border-radius:8px; margin-bottom:20px; font-weight:bold; text-align:center;">🏆 恭喜！训练目标已达成！</div>' : ''}
                 
-                <h2 style="margin-top:0;">📊 认知巅峰实验报告</h2>
+                <h2 style="margin-top:0;">📊 认知灵活性实验报告</h2>
                 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
                     <div style="background:#f8f9fa; padding:15px; border-radius:8px;">
@@ -1454,7 +1531,7 @@ const report = {
                 <h3>📋 审计日志 (机制验证)</h3>
                 <div style="max-height:200px; overflow-y:auto; border:1px solid #eee;">
                     <table class="data-table">
-                        <thead><tr><th>R</th><th>Card</th><th>Dir</th><th>Rule</th><th>Real</th><th>Disp</th><th>Noise</th><th>Persev</th><th>Switch</th><th>RT</th></tr></thead>
+                        <thead><tr><th>R</th><th>Card</th><th>Dir</th><th>Rule</th><th>Real</th><th>Disp</th><th>Noise</th><th>Persev</th><th>Switch</th><th>RT</th><th>我的猜测</th></tr></thead>
                         <tbody>${auditRows}</tbody>
                     </table>
                 </div>
@@ -1528,7 +1605,7 @@ const inquiry = {
         const rule = game.getRuleDef(last.ruleId);
         document.getElementById('inquiryContent').innerText = 
 `回合：${last.turn}
-牌面：${last.cardStr}
+牌面：${last.cardStr || '-'}
 规则：${rule.name}
 判定：${last.realCorrect ? '正确' : '错误'} ${last.isNoised ? '(噪声干扰)' : ''}`;
         document.getElementById('inquiryModal').style.display = 'flex';
