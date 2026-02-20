@@ -23,7 +23,24 @@
 
         .container { width: 100%; max-width: 1200px; background: var(--card-bg); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); overflow: hidden; display: flex; flex-direction: column; position: relative; border: 1px solid #333; }
         
-        #exitFocusHint { display: none; position: absolute; top: 10px; right: 10px; font-size: 0.8rem; color: #666; border: 1px solid #444; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        #exitFocusHint {
+        display: none;
+        position: fixed;          /* 改为 fixed，相对于视口定位 */
+        bottom: 20px;              /* 放在底部 */
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;            /* 保证在最上层 */
+        background: #333;
+        color: #fff;
+        border: 2px solid var(--accent);
+        padding: 12px 24px;
+        border-radius: 40px;
+        font-size: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        cursor: pointer;
+        white-space: nowrap;
+        font-weight: 600;
+        }
 
         header { background: #1a1a1a; padding: 15px 25px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; font-size: 1.4rem; color: #fff; display: flex; align-items: center; gap: 10px; }
@@ -115,7 +132,29 @@
             .report-metrics-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
             .report-actions { flex-direction: column; }
             .report-actions button { width: 100%; min-height: 48px; }
+            #exitFocusHint {
+            bottom: 15px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            }
         }
+        /* 桌面端专注模式退出按钮：置于右上角，避免遮挡 */
+        @media (min-width: 701px) {
+        #exitFocusHint {
+        position: absolute;   /* 相对于 .container 定位 */
+        bottom: auto;
+        left: auto;
+        right: 10px;
+        top: 10px;
+        transform: none;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        border-radius: 4px;
+        background: #333;
+        border: 1px solid #444;
+        box-shadow: none;
+        }
+    }
 
         /* 报告规则矩阵颜色 */
         .rmt-hi { color: #27ae60; font-weight: bold; }
@@ -244,7 +283,7 @@
         .help-toc ol { margin: 0; padding-left: 22px; column-count: 2; column-gap: 30px; }
         .help-toc li { margin-bottom: 5px; }
         .help-toc a { color: var(--accent); text-decoration: none; font-size: 0.88rem; }
-        .help-toc a:hover { text-decoration: underline; }
+        .help-toc a:hover { text-decoration: underline; }   
         @media (max-width: 600px) { .help-toc ol { column-count: 1; } }
 
         /* 章节通用 */
@@ -1851,6 +1890,31 @@ const ui = {
 
         // 绑定所有事件处理器（替代内联 onclick）
         this.bindEvents();
+        // 为帮助目录链接添加平滑滚动（避开粘性头部）
+        const helpLinks = document.querySelectorAll('#helpModal .help-toc a');
+        helpLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+        e.preventDefault(); // 阻止默认跳转
+        const targetId = link.getAttribute('href'); // 例如 "#h-overview"
+        if (!targetId) return;
+        const targetElement = document.querySelector(targetId);
+        if (!targetElement) return;
+
+        // 获取粘性头部的高度（动态计算，适应不同屏幕）
+        const header = document.querySelector('#helpModal .help-header');
+        const headerHeight = header ? header.offsetHeight : 0;
+
+        // 计算目标元素相对于滚动容器的位置（.help-body 是可滚动容器）
+        const container = document.querySelector('#helpModal .help-body');
+        const targetTop = targetElement.offsetTop - container.offsetTop;
+
+        // 平滑滚动到目标位置减去头部高度，并留一点额外边距
+        container.scrollTo({
+            top: targetTop - headerHeight - 10,
+            behavior: 'smooth'
+           });
+        });
+    });
 
         // 键盘事件
         document.addEventListener('keydown', e => {
