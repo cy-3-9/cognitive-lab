@@ -942,6 +942,9 @@
       <div class="help-section" id="h-rules">
         <h2>二、规则库详解</h2>
         <p>工具内置 <strong>15 条</strong>分类规则，分为基础规则（1–9）和需要上下文的外卡规则（10–15）。</p>
+        <div class="help-tip info" style="margin-bottom: 15px;">
+            <strong>⚠️ 规则逻辑说明</strong>：所有规则均为“<strong>如果满足条件则放左，否则放右</strong>”的二分规则。例如“奇左偶右”表示奇数放左、偶数放右；“红奇或黑偶左”表示红奇或黑偶时放左，其余情况放右。
+          </div>
 
         <h3>基础规则（无需参考上一张牌）</h3>
         <div class="rule-grid">
@@ -951,10 +954,11 @@
           <div class="rule-card"><div class="rule-id">规则 4</div><div class="rule-name">红右黑左</div></div>
           <div class="rule-card"><div class="rule-id">规则 5</div><div class="rule-name">小左大右（≤6 小）</div></div>
           <div class="rule-card"><div class="rule-id">规则 6</div><div class="rule-name">小右大左</div></div>
-          <div class="rule-card"><div class="rule-id">规则 7</div><div class="rule-name">质左合右</div></div>
+          <div class="rule-card"><div class="rule-id">规则 7 *</div><div class="rule-name">质左合右</div></div>
           <div class="rule-card"><div class="rule-id">规则 8</div><div class="rule-name">红奇或黑偶 → 左</div></div>
           <div class="rule-card"><div class="rule-id">规则 9</div><div class="rule-name">红偶或黑奇 → 左</div></div>
         </div>
+        <p style="font-size:0.8rem; color:#aaa; margin-top:8px;">* 规则7中，点数1也被视为质数处理（即1、2、3、5、7、11、13放左，其余放右）。</p>
 
         <h3>外卡规则（需与上一张牌比较）</h3>
         <div class="rule-grid">
