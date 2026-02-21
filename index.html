@@ -49,8 +49,8 @@
         .game-grid { display: grid; grid-template-columns: 2fr 1.1fr; gap: 0; min-height: 650px; transition: 0.3s; }
         @media (max-width: 900px) { .game-grid { grid-template-columns: 1fr; } }
         
-        .left-panel { padding: 25px; border-right: 1px solid #333; display: flex; flex-direction: column; position: relative; }
-        .right-panel { background: var(--panel-bg); padding: 25px; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #333; transition: 0.3s; }
+        .left-panel { padding: 25px; border-right: 1px solid #333; display: flex; flex-direction: column; position: relative; align-self: start;}
+        .right-panel { background: var(--panel-bg); padding: 25px; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #333; transition: 0.3s; max-height: calc(100vh - 140px);overflow-y: auto;}
 
         .control-bar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #333; }
         
@@ -1798,7 +1798,7 @@ const game = {
     postSubmit(s, r) {
         this.state.lastCard = { suit: s, rank: r };
         if (this.state.autoMode) setTimeout(() => this.dealCard(), 150);
-        if (this.state.streak >= 3) ui.updateVerifyBtn(true); else ui.updateVerifyBtn(false);
+        //if (this.state.streak >= 3) ui.updateVerifyBtn(true); else ui.updateVerifyBtn(false);
         ui.render();
     },
 
@@ -1893,6 +1893,8 @@ const ui = {
 
         // 绑定所有事件处理器（替代内联 onclick）
         this.bindEvents();
+        // 验证按钮永久亮起（视觉常亮）
+        document.getElementById('verifyBtn').classList.add('active');
         // 为帮助目录链接添加平滑滚动（避开粘性头部）
         const helpLinks = document.querySelectorAll('#helpModal .help-toc a');
         helpLinks.forEach(link => {
@@ -1943,6 +1945,10 @@ const ui = {
                 document.getElementById('guessParseHint').style.display = 'none';
             }
         });
+        // 猜测规则选择后自动失去焦点，方便快捷键操作
+        guessSelect.addEventListener('change', function() {
+        this.blur();
+      });
     },
 
     bindEvents() {
@@ -2137,8 +2143,7 @@ const ui = {
     },
 
     updateVerifyBtn(active) {
-        const btn = document.getElementById('verifyBtn');
-        if(active) btn.classList.add('active'); else btn.classList.remove('active');
+         // 不做任何事，保持按钮常亮
     },
     
     updateDifficulty() {
