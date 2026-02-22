@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>认知灵活性实验室 v11.0 (Custom Edition)</title>
+    <title>认知灵活性实验室 v12.0 (Custom Edition)</title>
     <style>
         :root {
             --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --warning: #f39c12; --error: #e74c3c;
@@ -50,7 +50,7 @@
         @media (max-width: 900px) { .game-grid { grid-template-columns: 1fr; } }
         
         .left-panel { padding: 25px; border-right: 1px solid #333; display: flex; flex-direction: column; position: relative; align-self: start;}
-        .right-panel { background: var(--panel-bg); padding: 25px; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #333; transition: 0.3s; max-height: calc(100vh - 140px);overflow-y: auto;}
+        .right-panel { background: var(--panel-bg); padding: 25px; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #333; transition: 0.3s; max-height: calc(100vh - 100px);overflow-y: auto;}
 
         .control-bar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #333; }
         
@@ -103,7 +103,7 @@
         .diff-bar-bg { height: 4px; background: #444; border-radius: 2px; margin-top: 5px; overflow: hidden; }
         .diff-bar-fill { height: 100%; background: linear-gradient(90deg, #27ae60, #f39c12, #e74c3c); width: 0%; transition: 0.5s; }
 
-        .log-box { flex: 1; background: #1a1a1a; border-radius: 10px; padding: 10px; overflow-y: auto; max-height: 300px; font-size: 0.85rem; border: 1px solid #333; font-family: monospace; }
+        .log-box { flex: 1; background: #1a1a1a; border-radius: 10px; padding: 10px; overflow-y: auto; max-height: 400px; min-height: 200px; font-size: 0.85rem; border: 1px solid #333; font-family: monospace; }
         .log-item { padding: 6px 0; border-bottom: 1px dashed #333; display: flex; align-items: center; gap: 8px; color: #ccc; }
         
         /* 弹窗 */
@@ -489,7 +489,8 @@
 
             /* --- 日志区 --- */
             .log-box {
-                max-height: 140px;
+                max-height: 200px;
+                min-height: 100px;
                 font-size: 0.78rem;
             }
 
@@ -572,6 +573,7 @@
             /* --- 配置弹窗 --- */
             #configModal .modal-content {
                 padding: 20px 16px;
+                max-height: calc(80dvh - 80px); /* v12: 动态视口高度适配 */
             }
             #configModal .modal-content h2 {
                 font-size: 1.1rem;
@@ -649,6 +651,9 @@
             .card-suit {
                 font-size: 16vw;
             }
+            .right-panel > div:last-child {
+                grid-template-columns: 1fr !important;  /* 改为单列，防止按钮换行 */
+            }
             .right-panel > div:last-child button {
                 font-size: 0.78rem !important;
                 padding: 11px 4px !important;
@@ -663,6 +668,196 @@
             body:not(.show-key-hints) .drop-zone .key-hint {
                 display: none;
             }
+            /* 底部功能按钮行：禁止换行，保持整洁单行 */
+            .right-panel > div:last-child {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                gap: 6px !important;
+            }
+            .right-panel > div:last-child button {
+                white-space: nowrap;
+                flex: 1;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 1;
+                padding: 8px 4px;
+                font-size: 0.82rem;
+                min-height: 40px;
+            }
+        }
+
+        /* ── v12.0 新增样式 ── */
+
+        /* 专注模式猜测状态条 */
+        #focusGuessBar {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            font-size: 0.82rem;
+            color: #aaa;
+            cursor: pointer;
+            position: relative;
+        }
+        #focusGuessBar:hover { border-color: var(--accent); }
+        #focusGuessBar .fg-label { color: #666; font-size: 0.75rem; }
+        #focusGuessBar .fg-val  { color: #e0e0e0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #focusGuessBar .fg-arrow { color: #666; font-size: 0.7rem; }
+        body.focus-mode #focusGuessBar { display: flex; }
+
+        /* 专注猜测展开面板 */
+        #focusGuessPanel {
+            display: none;
+            position: absolute;
+            top: 100%; left: 0; right: 0;
+            background: #2a2a2a;
+            border: 1px solid #555;
+            border-radius: 8px;
+            z-index: 500;
+            padding: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        #focusGuessPanel.open { display: block; }
+        #focusGuessPanel select {
+            width: 100%;
+            padding: 8px;
+            background: #444;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        /* G键规则浮层 */
+        #ruleOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 4000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        #ruleOverlay.open { display: flex; }
+        #ruleOverlayBox {
+            background: #1e1e1e;
+            border: 1px solid #555;
+            border-radius: 14px;
+            padding: 22px 24px;
+            width: 90%;
+            max-width: 560px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            animation: slideUp 0.2s;
+        }
+        #ruleOverlayBox h3 { margin: 0 0 14px; font-size: 1rem; color: #e0e0e0; display: flex; justify-content: space-between; }
+        #ruleOverlayBox h3 span { font-size: 0.75rem; color: #888; font-weight: normal; align-self: flex-end; }
+        .ro-rule-btn {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; padding: 9px 12px; margin-bottom: 5px;
+            background: #2a2a2a; border: 1px solid #3a3a3a;
+            border-radius: 7px; cursor: pointer; color: #ccc;
+            font-size: 0.88rem; text-align: left; transition: 0.15s;
+        }
+        .ro-rule-btn:hover, .ro-rule-btn:focus { background: #3a3a3a; border-color: var(--accent); color: #fff; outline: none; }
+        .ro-rule-btn .ro-key { min-width: 26px; height: 22px; background: #444; border: 1px solid #666; border-bottom: 2px solid #555; border-radius: 4px; font-size: 0.72rem; color: #aaa; font-family: monospace; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .ro-rule-btn.wild .ro-key { background: #2a1e3a; border-color: #6a4a9a; color: #b39ddb; }
+
+        /* 手动模式点数数字输入框 */
+        #rankNumInput::-webkit-inner-spin-button, #rankNumInput::-webkit-outer-spin-button { opacity: 0.5; }
+        @media (max-width: 700px) { #rankNumInput { width: 52px !important; font-size: 0.82rem !important; padding: 4px 5px !important; } }
+        /* 噪声实时切换下拉框 */
+        #noiseModeInline { max-width: 110px; }
+        @media (max-width: 700px) { #noiseModeInline { max-width: 90px; font-size: 0.72rem; } }
+
+        /* 猜测输入框快速清空按钮 */
+        .guess-input-wrap { position: relative; }
+        .guess-clear-btn {
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: #888; font-size: 1rem; cursor: pointer;
+            padding: 2px 6px; min-height: unset; line-height: 1;
+            display: none;
+        }
+        .guess-clear-btn:hover { color: #e74c3c; }
+        .guess-clear-btn.visible { display: block; }
+
+        /* 训练目标进度 */
+        #goalProgressRow { display: none; }
+        .goal-bar-bg { height: 4px; background: #444; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+        .goal-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); transition: width 0.4s; border-radius: 2px; }
+
+        /* 验证提示浮层 Toast */
+        #verifyToast {
+            position: fixed;
+            background: #2d1b4e;
+            color: #c39ef5;
+            border: 1px solid #6c3fc8;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 5000;
+            white-space: normal;
+            word-break: break-word;
+            max-width: calc(100vw - 32px);
+            box-sizing: border-box;
+        }
+        #verifyToast.show { opacity: 1; }
+
+        /* aria-live 日志通知（屏幕阅读器）*/
+        #srAnnounce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+        /* 无障碍：focus-visible 强化 */
+        button:focus-visible, select:focus-visible, input:focus-visible {
+            outline: 2px solid var(--accent) !important;
+            outline-offset: 3px !important;
+            box-shadow: 0 0 0 4px rgba(52,152,219,0.25) !important;
+        }
+        .ro-rule-btn:focus-visible {
+            outline: 2px solid var(--accent) !important;
+            outline-offset: 2px !important;
+        }
+        .drop-zone:focus-visible {
+            outline: 2px solid var(--accent) !important;
+            outline-offset: 2px !important;
+            border-color: var(--accent) !important;
+        }
+
+        /* 报告滚动提示（移动端） */
+        .audit-scroll-hint {
+            display: none;
+            font-size: 0.72rem;
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        @media (max-width: 700px) {
+            .audit-scroll-hint { display: block; }
+            /* 移动端专注退出按钮移至左上角 */
+            #exitFocusHint {
+                bottom: auto !important;
+                top: 8px !important;
+                left: 8px !important;
+                transform: none !important;
+                padding: 6px 12px !important;
+                font-size: 0.78rem !important;
+                border-radius: 6px !important;
+            }
+            /* 日志字体与行高优化 */
+            .log-box { font-size: 0.85rem !important; line-height: 1.6; }
         }
     </style>
 </head>
@@ -672,15 +867,45 @@
 
 <div class="container">
     <header>
-        <h1>🧪 认知灵活性实验室 <span class="badge">v11.0</span></h1>
+        <h1>🧪 认知灵活性实验室 <span class="badge">v12.0</span></h1>
         <div style="font-size:0.9rem; color:#aaa; display:flex; align-items:center; gap:12px;">
             <button class="btn-outline" id="helpBtn" style="font-size:0.8rem; padding:5px 12px;">📖 使用说明</button>
             <span id="headerStatus">配置中...</span>
         </div>
     </header>
 
-    <div id="gameInterface" class="game-grid">
+    <div id="gameInterface" class="game-grid" role="main">
+        <!-- 屏幕阅读器反馈通知区 -->
+        <div id="srAnnounce" aria-live="polite" aria-atomic="true"></div>
+
         <div class="left-panel">
+            <!-- 专注模式猜测状态条 -->
+            <div id="focusGuessBar" title="点击修改猜测" tabindex="0" role="button" aria-label="当前猜测，点击修改">
+                <span class="fg-label">猜:</span>
+                <span class="fg-val" id="focusGuessVal">未猜</span>
+                <span class="fg-arrow">▾</span>
+                <div id="focusGuessPanel">
+                    <select id="focusGuessSelect">
+                        <option value="">选择规则…</option>
+                        <option value="奇左偶右">1. 奇左偶右</option>
+                        <option value="奇右偶左">2. 奇右偶左</option>
+                        <option value="红左黑右">3. 红左黑右</option>
+                        <option value="红右黑左">4. 红右黑左</option>
+                        <option value="小左大右">5. 小左大右</option>
+                        <option value="小右大左">6. 小右大左</option>
+                        <option value="质左合右">7. 质左合右</option>
+                        <option value="(红奇或黑偶)左">8. (红奇或黑偶)左</option>
+                        <option value="(红偶或黑奇)左">9. (红偶或黑奇)左</option>
+                        <option value="比上一张大放左">10. 比上一张大放左</option>
+                        <option value="同花色放左">11. 同花色放左</option>
+                        <option value="点数是3的倍数放左">12. 点数是3的倍数放左</option>
+                        <option value="同色放左(红跟红/黑跟黑)">13. 同色放左(红跟红/黑跟黑)</option>
+                        <option value="比上一张小放左">14. 比上一张小放左</option>
+                        <option value="点数和上一张相同放左">15. 点数和上一张相同放左</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="control-bar">
                 <button class="btn-start" id="newExpBtn">⚙️ 新实验</button>
                 <button class="btn-outline" id="modeBtn">🃏 自动发牌</button>
@@ -698,7 +923,15 @@
                         <button class="opt-btn black" id="s_S">♠</button>
                         <button class="opt-btn black" id="s_C">♣</button>
                     </div>
-                    <div id="rankContainer" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <div id="rankContainer" style="display:flex; flex-wrap:wrap; gap:5px; flex:1;"></div>
+                        <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                            <label for="rankNumInput" style="font-size:0.72rem; color:#888; white-space:nowrap;">快速输入</label>
+                            <input type="number" id="rankNumInput" min="1" max="13" placeholder="1–13"
+                                style="width:58px; padding:5px 6px; background:#333; color:#e0e0e0; border:1px solid #555; border-radius:5px; font-size:0.85rem; text-align:center;"
+                                aria-label="输入点数 1到13">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -717,12 +950,27 @@
         </div>
 
         <div class="right-panel">
-            <div class="status-panel">
+            <div class="status-panel" role="status" aria-label="训练状态">
                 <div class="stat-row"><span>连对计数</span><span class="stat-val" id="dispStreak">0</span></div>
                 <div class="stat-row"><span>上轮耗时</span><span class="stat-val" id="lastRt">--</span></div>
                 <div class="stat-row"><span>规则切换</span><span class="stat-val" id="dispSwitchCount">0 次</span></div>
                 <div class="stat-row"><span>定势错误</span><span class="stat-val" id="dispPersevCount" style="color:#e74c3c;">0 次</span></div>
-                <div class="stat-row" id="noiseStatusRow"><span>噪声模式</span><span class="stat-val" id="dispNoiseMode" style="font-size:0.82rem;">--</span></div>
+                <div class="stat-row" id="noiseStatusRow" style="align-items:center;">
+                    <span>噪声模式</span>
+                    <select id="noiseModeInline" aria-label="实时切换噪声强度" style="background:#333; color:#f39c12; border:1px solid #555; border-radius:4px; font-size:0.78rem; padding:2px 4px; font-weight:600; cursor:pointer;">
+                        <option value="directional">✅? 方向</option>
+                        <option value="neutral">？ 中性</option>
+                        <option value="none">⚠️ 纯噪声</option>
+                    </select>
+                </div>
+                <!-- 训练目标进度 -->
+                <div class="stat-row" id="goalProgressRow">
+                    <span id="goalProgressLabel" style="font-size:0.82rem;">目标进度</span>
+                    <span class="stat-val" id="goalProgressVal" style="font-size:0.82rem;color:var(--accent);">--</span>
+                </div>
+                <div id="goalProgressBarWrap" style="display:none; margin-bottom:6px;">
+                    <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalProgressBar" style="width:0%"></div></div>
+                </div>
                 <div class="stat-row" style="margin-top:10px;">
                     <span style="font-size:0.8rem">自适应难度</span>
                     <span class="stat-val" style="font-size:0.8rem" id="diffVal">L3</span>
@@ -745,16 +993,19 @@
                     <option value="小左大右">5. 小左大右</option>
                     <option value="小右大左">6. 小右大左</option>
                     <option value="质左合右">7. 质左合右</option>
-                    <option value="红奇或黑偶左">8. 红奇或黑偶左</option>
-                    <option value="红偶或黑奇左">9. 红偶或黑奇左</option>
+                    <option value="(红奇或黑偶)左">8. (红奇或黑偶)左</option>
+                    <option value="(红偶或黑奇)左">9. (红偶或黑奇)左</option>
                     <option value="比上一张大放左">10. 比上一张大放左</option>
                     <option value="同花色放左">11. 同花色放左</option>
                     <option value="点数是3的倍数放左">12. 点数是3的倍数放左</option>
-                    <option value="同色放左">13. 同色放左</option>
+                    <option value="同色放左(红跟红/黑跟黑)">13. 同色放左(红跟红/黑跟黑)</option>
                     <option value="比上一张小放左">14. 比上一张小放左</option>
                     <option value="点数和上一张相同放左">15. 点数和上一张相同放左</option>
                 </select>
-                <input type="text" id="guessCustomInput" placeholder="自定义猜测（如“点数是5的倍数放左”）" style="width:100%; padding:8px; background:#444; color:#fff; border:none; border-radius:4px; box-sizing:border-box;">
+                <div class="guess-input-wrap">
+                    <input type="text" id="guessCustomInput" placeholder="自定义猜测（如'点数是5的倍数放左'）" style="width:100%; padding:8px 30px 8px 8px; background:#444; color:#fff; border:none; border-radius:4px; box-sizing:border-box;" aria-label="自定义猜测输入">
+                    <button class="guess-clear-btn" id="guessClearBtn" title="清空" aria-label="清空自定义猜测">✖</button>
+                </div>
                 <div id="guessParseHint" class="guess-parse-hint" style="display:none;"></div>
                 <div style="font-size:0.7rem; color:#888; margin-top:5px;">选择固定规则或输入自定义猜测，每回合自动记录。自定义输入支持自然语言解析。</div>
             </div>
@@ -771,9 +1022,20 @@
     <div id="reportSection" style="display:none; padding:30px; animation:slideUp 0.3s; color:#333; background:#f0f2f5;"></div>
 </div>
 
-<div id="configModal" class="modal" style="display:flex;">
+<div id="configModal" class="modal" style="display:flex;" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
     <div class="modal-content" style="max-width:550px;">
-        <h2 style="margin-top:0">⚙️ 实验参数配置</h2>
+        <h2 style="margin-top:0" id="configModalTitle">⚙️ 实验参数配置</h2>
+
+        <!-- 快捷预设按钮 -->
+        <div style="margin-bottom:14px;">
+            <div style="font-size:0.75rem; color:#888; margin-bottom:8px; letter-spacing:0.5px;">⚡ 一键配置（直接启动）</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button id="presetBtn1" class="btn-outline" style="font-size:0.78rem; padding:5px 10px; border-color:#27ae60; color:#27ae60;" title="阶段1：规则1,3,5 · 无外卡 · 5次切换目标 · 自动发牌">🟢 入门<br><span style="font-size:0.65rem; opacity:0.8;">阶段1 · 规则1,3,5</span></button>
+                <button id="presetBtn2" class="btn-outline" style="font-size:0.78rem; padding:5px 10px; border-color:#3498db; color:#3498db;" title="阶段2：规则1-6 · 无外卡 · 5次切换目标 · 自动发牌">🔵 标准<br><span style="font-size:0.65rem; opacity:0.8;">阶段2 · 规则1-6</span></button>
+                <button id="presetBtn3" class="btn-outline" style="font-size:0.78rem; padding:5px 10px; border-color:#f39c12; color:#f39c12;" title="阶段3：规则1-7 · 无外卡 · 5次切换目标 · 自动发牌">🟡 进阶<br><span style="font-size:0.65rem; opacity:0.8;">阶段3 · 规则1-7</span></button>
+                <button id="presetBtn4" class="btn-outline" style="font-size:0.78rem; padding:5px 10px; border-color:#e74c3c; color:#e74c3c;" title="阶段4：全规则 + 外卡 + 动态外卡 · 5次切换目标 · 自动发牌">🔴 大师<br><span style="font-size:0.65rem; opacity:0.8;">阶段4 · 全规则+外卡</span></button>
+            </div>
+        </div>
         
         <div style="max-height:450px; overflow-y:auto; padding-right:10px;">
             
@@ -875,7 +1137,10 @@
             </div>
         </div>
 
-        <button class="btn-start" id="startBtn" style="width:100%; margin-top:20px; padding:12px;">启动实验</button>
+        <div style="display:flex; gap:8px; margin-top:20px;">
+            <button class="btn-start" id="startBtn" style="flex:1; padding:12px;">启动实验</button>
+            <button class="btn-outline" id="resetConfigBtn" style="padding:12px 14px; border-color:#555; color:#888; font-size:0.82rem;" title="恢复默认配置">↺ 默认</button>
+        </div>
         <button class="btn-outline" id="configHelpBtn" style="width:100%; margin-top:10px; padding:10px;">📖 查看使用说明</button>
     </div>
 </div>
@@ -914,14 +1179,23 @@
     </div>
 </div>
 
+<div id="verifyToast"></div>
 <div id="feedbackOverlay"><div id="feedbackText">✅</div></div>
 
-<div id="helpModal" class="modal">
+<!-- G键规则快速选择浮层 -->
+<div id="ruleOverlay" role="dialog" aria-modal="true" aria-labelledby="ruleOverlayTitle">
+    <div id="ruleOverlayBox">
+        <h3 id="ruleOverlayTitle">🎯 快速选择规则 <span>点击或按对应键 · ESC 关闭</span></h3>
+        <div id="ruleOverlayList"></div>
+    </div>
+</div>
+
+<div id="helpModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
   <div class="modal-content">
     <div class="help-header">
       <div>
         <h2>📖 认知灵活性实验室 · 完整使用说明</h2>
-        <p>基于经典威斯康星卡片分类任务（WCST）的高级认知训练系统 · v11.0 CUSTOM</p>
+        <p>基于经典威斯康星卡片分类任务（WCST）的高级认知训练系统 · v12.0 CUSTOM</p>
       </div>
       <button class="help-close" id="closeHelpBtn">✖ 关闭</button>
     </div>
@@ -941,7 +1215,7 @@
           <li><a href="#h-tips">训练建议</a></li>
           <li><a href="#h-datamanage">数据管理与导出</a></li>
           <li><a href="#h-faq">常见问题</a></li>
-          <li><a href="#h-changelog">v11.0 更新日志</a></li>
+          <li><a href="#h-changelog">v12.0 更新日志</a></li>
         </ol>
       </div>
 
@@ -1038,7 +1312,7 @@
           <div class="metric-card"><div class="m-value" style="color:#f39c12">2–6s</div><div class="m-label">正常适应 → 阈值不变</div></div>
           <div class="metric-card"><div class="m-value" style="color:#e74c3c">＞ 6s</div><div class="m-label">适应慢 → 阈值升高，给更多时间</div></div>
         </div>
-        <p>阈值范围始终保持在 <strong>3–6 次</strong>之间，确保挑战性与您的当前水平匹配。</p>
+        <p>阈值会根据您的适应时间在 3–6 之间动态调整，每次切换时还会增加 ±1 的随机波动，因此实际触发切换的连对次数范围为 <strong>3–7 次</strong>。这确保了挑战性与您的当前水平匹配，同时增加不可预测性。</p>
 
         <h3>3.3 持续性错误（思维定势）</h3>
         <p>当您犯错，且该错误方向与<strong>上一规则</strong>的预期一致时，系统会标记为"持续性错误"（日志中显示 🔒，右侧状态面板实时计数）。这是衡量您是否固着于旧规则的关键指标。报告中将独立显示<strong>持续性错误率</strong>（占全部错误回合的百分比）和绝对次数，并给出参考标准：&lt;15% 灵活、15–30% 轻度定势、&gt;30% 明显定势。</p>
@@ -1087,7 +1361,7 @@
           <li><strong>完成 5 次规则切换</strong>：标准挑战，报告会显示目标达成提示。</li>
           <li><strong>无限制自由训练</strong>：无压力模式，适合探索和热身。</li>
           <li><strong>正确率 ≥ 80%</strong>：适合检验对某阶段规则的掌握程度。</li>
-          <li><strong>平均适应时间 ＜ 2 秒</strong>：极限挑战，要求超快的规则切换能力。</li>
+          <li><strong>连续适应时间 ＜ 2 秒</strong>：极限挑战，要求连续3次适应均在2秒内完成（或最近5次中至少4次低于2秒），确保稳定而非偶然的快速适应。</li>
         </ul>
 
         <h3>概率噪声与提示强度</h3>
@@ -1130,7 +1404,7 @@
         </ul>
 
         <h3>主动验证（V 键）</h3>
-        <p>当连对计数达到 3 次时，<strong>"🔬 验证"</strong> 按钮会亮起（紫色高亮）。点击后，您可故意出一张您认为可能<strong>违反</strong>当前规则的牌，系统给出紫色反馈（"符合"或"违背"）。验证回合<strong>不影响连对计数和规则切换</strong>，专为检验假设而设计 —— 这是培养科学探索思维的核心功能。</p>
+        <p>验证按钮始终保持亮紫色，但只有连对计数达到 3 次时点击才会真正进入验证模式（此时出牌会得到紫色反馈）。若连对不足 3 次，点击无效。验证回合<strong>不影响连对计数和规则切换</strong>，专为检验假设而设计 —— 这是培养科学探索思维的核心功能。</p>
 
         <div class="help-tip">💡 善用验证功能可大幅缩短规则识别时间。连对 3 次后先验证一次反例，再决定是否继续积累连对，能显著提升训练效率。</div>
 
@@ -1153,7 +1427,7 @@
         <ul>
           <li><strong>正确率</strong>：本次整体正确率（排除验证回合）。基于真实结果统计，不受噪声影响。参考：≥75% 良好，50–75% 待提升，&lt;50% 需强化。</li>
           <li><strong>平均 RT</strong>：平均反应时（毫秒），数值越低说明决策越快、越自动化。参考：&lt;1000ms 达到自动化水平，1–2500ms 正常范围，&gt;2500ms 偏慢。</li>
-          <li><strong>平均适应时间</strong>：每次规则切换后从切换时刻到连续正确 3 次所需的平均时间，是衡量认知灵活性的核心指标。参考：&lt;2s 快速，2–6s 正常，&gt;6s 偏慢（系统同时据此动态调整阈值）。</li>
+          <li><strong>平均适应时间</strong>：每次规则切换后从切换时刻到连续正确 3 次所需的平均时间，是衡量认知灵活性的核心指标。参考：连续3次&lt;2s 快速且稳定，平均2–6s 正常，&gt;6s 偏慢（系统同时据此动态调整阈值）。</li>
           <li><strong>持续性错误率</strong>：在全部错误回合中，有多大比例属于"定势错误"——即您仍按上一条旧规则的逻辑行动。比例越高说明认知灵活性越需要加强。参考：&lt;15% 灵活，15–30% 轻度定势，&gt;30% 明显定势。报告同时显示持续性错误的绝对次数。</li>
           <li><strong>规则切换次数</strong>：本次训练共经历多少次规则切换，可与训练目标对照检查。</li>
         </ul>
@@ -1215,7 +1489,7 @@
         <p>当您在当前阶段的报告中<strong>连续 2–3 次</strong>达到以下指标，即可考虑进入下一阶段或开启更高级机制（外卡、噪声）。报告内置参考标准颜色标注，方便快速判断：</p>
         <div class="metric-grid">
           <div class="metric-card"><div class="m-value">＞80%</div><div class="m-label">正确率</div></div>
-          <div class="metric-card"><div class="m-value">＜2s</div><div class="m-label">平均适应时间</div></div>
+          <div class="metric-card"><div class="m-value">连续3次＜2s</div><div class="m-label">连续快速适应</div></div>
           <div class="metric-card"><div class="m-value">＜15%</div><div class="m-label">持续性错误率</div></div>
         </div>
 
@@ -1335,33 +1609,62 @@
       <hr class="help-divider">
 
       <div class="help-section" id="h-changelog">
-        <h2>十二、v11.0 更新日志</h2>
-        
+        <h2>十二、v12.0 更新日志</h2>
+
         <h3>🐛 错误修复</h3>
         <ul>
-          <li><strong>修复 "ui is not defined" 和 "game is not defined" 错误</strong>：将所有内联事件处理器（onclick）改为动态绑定，确保对象在事件绑定前已正确定义。</li>
+          <li><strong>G键规则浮层快捷键冲突修复</strong>：浮层打开时统一由全局监听处理浮层键，阻断游戏快捷键传播，消除浮层选择与游戏操作同时触发的问题。</li>
+          <li><strong>placeholder 双引号截断修复</strong>：自定义猜测输入框提示文字改用单引号，HTML 属性解析不再被截断。</li>
         </ul>
 
-        <h3>✨ 新功能</h3>
+        <h3>✨ 新功能与改进</h3>
         <ul>
-          <li><strong>猜测输入自动解析</strong>：自定义猜测文本框现在支持自然语言解析！输入如"红色且奇数放左"、"点数是5的倍数放左"等描述，系统会自动匹配到对应的规则ID，被成功解析的输入也会计入猜测准确率统计。</li>
-          <li><strong>快捷键提示开关</strong>：在配置弹窗中新增"显示快捷键提示"选项，允许用户手动控制是否在分类按钮上显示键盘快捷键（←、→）。手机端默认隐藏，但连接外接键盘时可手动开启。</li>
-          <li><strong>持续性错误高亮追踪</strong>：当连续 3 次犯持续性错误（思维定势）时，分类按钮会闪烁红光和震动，提醒您注意思维定势，帮助及时打断旧规则惯性。</li>
+          <li><strong>手动模式点数快速输入</strong>：点数按钮区新增数字输入框（1–13），输入后自动选中点数并高亮对应按钮，无需逐一点击。</li>
+          <li><strong>噪声强度实时切换</strong>：训练过程中噪声模式行内置下拉选择器，可即时切换方向提示 / 中性提示 / 纯噪声，无需重启实验。与配置弹窗选项实时双向同步。</li>
+          <li><strong>配置弹窗"↺ 默认"按钮</strong>：一键将所有参数恢复为出厂默认值（阶段1、无外卡、5次切换目标、自动发牌），点击后短暂显示"✓ 已重置"确认。</li>
+          <li><strong>结束按钮确认模式</strong>：首次点击变为红底"再点确认"，3 秒内再点才真正结束；超时自动恢复，防止误触。</li>
+          <li><strong>验证提示浮层（verifyToast）</strong>：验证条件不满足时改为按钮上方弹出紫色浮层，2.2 秒自动消失；含边界检测，移动端不会超出屏幕。</li>
+          <li><strong>一键配置扩展至 4 个阶段</strong>：🟢 入门（阶段1·规则1,3,5）/ 🔵 标准（阶段2·规则1-6）/ 🟡 进阶（阶段3·规则1-7）/ 🔴 大师（阶段4·全规则+外卡+动态）；与训练阶段下拉菜单一一对应。</li>
+          <li><strong>专注模式猜测状态条</strong>：进入专注模式后，左侧面板顶部显示当前猜测摘要，点击展开下拉框即可修改。</li>
+          <li><strong>训练目标进度条</strong>：状态面板实时显示目标完成进度；达成时屏幕阅读器播报"恭喜，训练目标已达成"。</li>
+          <li><strong>日志时间戳</strong>：每条日志条目左侧显示 HH:MM 格式时间戳。</li>
+          <li><strong>触觉反馈</strong>：移动端答对短振 10ms，答错双振 15-10-15ms。</li>
+          <li><strong>实验状态自动存档与恢复</strong>：每次提交后自动存档，刷新或意外关闭后可选择恢复上次训练。</li>
+          <li><strong>桌面端日志框高度优化</strong>：max-height 提升至 400px，新增 min-height: 200px。</li>
+          <li><strong>桌面端功能按钮行布局修复</strong>：禁止文字换行，趋势 / 专注 / 质询 / 结束四个按钮始终整洁对齐。</li>
+          <li><strong>移动端日志框高度优化</strong>：max-height 提升至 200px，新增 min-height: 100px。</li>
+          <li><strong>G键规则快速浮层</strong>：按 G 键弹出规则列表，数字/字母键直接选规则更新猜测，ESC 或再按 G 关闭。</li>
+        </ul>
+
+        <h3>♿ 可访问性改进</h3>
+        <ul>
+          <li><strong>屏幕阅读器实时通知</strong>：规则切换、进入验证模式、训练目标达成时通过 aria-live 区域自动播报。</li>
+          <li><strong>模态框焦点完整管理</strong>：打开弹窗时聚焦首个交互元素；关闭弹窗后焦点准确返回触发按钮。</li>
+          <li><strong>focusGuessBar aria-expanded</strong>：展开/收起时同步 aria-expanded 属性。</li>
+          <li><strong>focus-visible 强化</strong>：焦点指示器增加外发光，键盘导航更清晰。</li>
         </ul>
 
         <h3>📚 文档更新</h3>
         <ul>
-          <li>更新使用说明，添加新功能的详细介绍。</li>
-          <li>新增"v11.0 更新日志"章节。</li>
+          <li>使用说明版本号全面更新至 v12.0，更新日志列出本版本所有改动。</li>
+        </ul>
+
+        <hr class="help-divider" style="margin:24px 0 20px;">
+        <h2 style="font-size:0.95rem; color:#888; border-left-color:#555;">（参考）v11.0 主要功能</h2>
+        <ul>
+          <li><strong>猜测输入自动解析</strong>：自定义猜测支持自然语言解析，匹配成功显示绿色提示并计入猜测准确率。</li>
+          <li><strong>快捷键提示开关</strong>：可在配置弹窗控制是否显示 ←/→ 快捷键提示。</li>
+          <li><strong>持续性错误高亮追踪</strong>：连续 3 次定势错误时分类按钮闪红光并震动。</li>
         </ul>
       </div>
 
       <div style="text-align:center; padding: 20px 0 10px; color: #555; font-size: 0.82rem;">
-        认知灵活性实验室 v11.0 CUSTOM &nbsp;·&nbsp; 集科学性、透明性与可定制性于一体
+        认知灵活性实验室 v12.0 CUSTOM &nbsp;·&nbsp; 集科学性、透明性与可定制性于一体
       </div>
 
     </div></div>
 </div>
+
 <script>
 /** 规则库 - V11.0 */
 const BASE_RULES = {
@@ -1513,10 +1816,12 @@ const game = {
         currentRule: null, previousRule: null, 
         streak: 0, thresholdBase: 5, currentThreshold: 5,
         logs: [], turn: 0, lastCard: null,
-        switchTime: 0, adaptTimes: [], verifyMode: false,
+        switchTime: 0, adaptTimes: [], recentAdaptTimes: [], adaptGoalMet: false, verifyMode: false,
         autoCard: { suit: 'H', rank: 1 }, autoMode: false,
         lastActionTime: 0,
-        consecutivePersevCount: 0  // v11.0: 连续持续性错误计数
+        consecutivePersevCount: 0,  // v11.0: 连续持续性错误计数
+        persevTimer: null,          // 持续性错误高亮定时器ID
+        maxLogDomNodes: 200         // v12: 日志DOM节点最大保留数量（虚拟滚动）
     },
     
     selection: { suit: 'H', rank: 1 },
@@ -1562,11 +1867,12 @@ const game = {
             currentRule: null, previousRule: null,
             streak: 0, thresholdBase: 5, currentThreshold: 5,
             logs: [], turn: 0, lastCard: null,
-            switchTime: 0, adaptTimes: [], verifyMode: false,
+            switchTime: 0, adaptTimes: [], recentAdaptTimes: [], adaptGoalMet: false, verifyMode: false,
             autoCard: { suit: 'H', rank: 1 }, autoMode: cfg.auto,
             lastActionTime: performance.now(),
             dynamicRules: {},   // id -> rule def, for dynamic wildcard rules
-            consecutivePersevCount: 0
+            consecutivePersevCount: 0,
+            persevTimer: null
         };
 
         // 应用快捷键提示设置
@@ -1579,6 +1885,7 @@ const game = {
         if (cfg.auto) this.dealCard();
         
         document.getElementById('logBox').innerHTML = '';
+        ui._goalAnnounced = false;
         this.logSystem("实验启动。请根据反馈推断规则。");
         if(cfg.custom) this.logSystem("⚠️ 当前为自定义规则模式");
         
@@ -1597,6 +1904,15 @@ const game = {
     drawNewRule(isFirst = false) {
         // ── 动态外卡抽取判断（30% 概率，非首次切换时生效）──
         if (!isFirst && this.state.config.dynamic && Math.random() < 0.30) {
+            // 修复：如果前一个规则是数字规则，将其从池中移除并放入 usedPool
+            if (typeof this.state.currentRule === 'number') {
+                const idx = this.state.pool.indexOf(this.state.currentRule);
+                if (idx > -1) {
+                    this.state.pool.splice(idx, 1);
+                    this.state.usedPool.push(this.state.currentRule);
+                }
+            }
+
             const prevDef = this.state.currentRule ? this.getRuleDef(this.state.currentRule) : null;
             const prevName = prevDef ? prevDef.name : '';
             const dynRule = generateDynamicRule(prevName);
@@ -1609,6 +1925,7 @@ const game = {
             this.state.currentThreshold = Math.max(3, this.state.thresholdBase + variation - 1);
             this.state.switchTime = performance.now();
             console.log(`[Sys] Dynamic Rule: ${dynRule.name}, Threshold: ${this.state.currentThreshold}`);
+            if (ui.announce) ui.announce('规则已切换');
             ui.updateDifficulty();
             return;
         }
@@ -1623,6 +1940,14 @@ const game = {
                     let base = [...PHASES[this.state.config.phase]];
                     if (this.state.config.wild) base = base.concat(Object.keys(WILDCARD_RULES).map(Number));
                     this.state.pool = base;
+                }
+                // 修复：如果当前规则是数字规则，将其从池中移除避免立即重复
+                if (typeof this.state.currentRule === 'number') {
+                    const idx = this.state.pool.indexOf(this.state.currentRule);
+                    if (idx > -1) {
+                        this.state.pool.splice(idx, 1);
+                        this.state.usedPool.push(this.state.currentRule);
+                    }
                 }
             } else { 
                 this.state.pool = [...this.state.usedPool]; 
@@ -1668,6 +1993,7 @@ const game = {
         if (!isFirst) this.state.switchTime = performance.now();
         
         console.log(`[Sys] Rule Switched: ${ruleId}, Threshold: ${this.state.currentThreshold}`);
+        if (!isFirst && ui.announce) ui.announce('规则已切换');
         ui.updateDifficulty();
     },
 
@@ -1700,6 +2026,8 @@ const game = {
 
     submit(dir) {
         if (!this.state.active) return;
+        // v12: 分类时自动失焦（移动端收起软键盘）
+        document.activeElement?.blur();
 
         const now = performance.now();
         const rt = now - this.state.lastActionTime;
@@ -1750,6 +2078,13 @@ const game = {
             if (this.state.streak === 3 && this.state.switchTime > 0) {
                 const adaptDuration = now - this.state.switchTime;
                 this.state.adaptTimes.push({ ruleId: this.state.currentRule, duration: adaptDuration });
+
+                // v12: 记录最近适应时间，用于adapt_2s目标判断（保留最近5次）
+                this.state.recentAdaptTimes.push(adaptDuration);
+                if (this.state.recentAdaptTimes.length > 5) {
+                    this.state.recentAdaptTimes.shift();
+                }
+
                 this.state.switchTime = 0; 
                 adaptationCompleted = true;
                 
@@ -1798,14 +2133,19 @@ const game = {
     postSubmit(s, r) {
         this.state.lastCard = { suit: s, rank: r };
         if (this.state.autoMode) setTimeout(() => this.dealCard(), 150);
-        //if (this.state.streak >= 3) ui.updateVerifyBtn(true); else ui.updateVerifyBtn(false);
         ui.render();
+        // v12: 自动存档
+        ui.saveSession();
     },
 
     verify() {
-        if (this.state.streak < 3) return;
+        if (this.state.streak < 3) {
+            ui.showVerifyHint("⚠️ 验证需要连续正确至少3次");
+            return;
+        }
         this.state.verifyMode = true;
         this.logSystem("🔬 进入验证模式...");
+        if (ui.announce) ui.announce('已进入验证模式');
     },
 
     getRuleDef(id) { 
@@ -1830,7 +2170,9 @@ const game = {
 
     logSystem(msg) {
         const box = document.getElementById('logBox');
+        const atTop = box.scrollTop <= 10;
         box.innerHTML = `<div style="padding:5px; color:#888; border-bottom:1px solid #333; font-style:italic;">${msg}</div>` + box.innerHTML;
+        if (atTop) box.scrollTop = 0;
     },
 
     end() {
@@ -1840,6 +2182,10 @@ const game = {
         }
         this.state.active = false;
         this.toggleFocus(false);
+        // 清除结束确认定时器
+        if (ui._clearEndConfirm) ui._clearEndConfirm();
+        // v12: 清除存档
+        localStorage.removeItem('wcst_session_snap');
         document.getElementById('gameInterface').style.display = 'none';
         document.getElementById('reportSection').style.display = 'block';
         report.generate();
@@ -1921,23 +2267,64 @@ const ui = {
         });
     });
 
-        // 键盘事件
+        // 键盘事件（统一处理，优先判断浮层状态）
         document.addEventListener('keydown', e => {
+            // 输入框内不处理全局快捷键
+            if (e.target.matches('input, select, textarea')) return;
+
+            // v12: 优先处理已打开的质询弹窗
+            const inquiryModal = document.getElementById('inquiryModal');
+            if (inquiryModal && inquiryModal.style.display === 'flex') {
+                if (e.key.toLowerCase() === 'q' || e.key === 'Escape') {
+                    e.preventDefault();
+                    inquiry.close();
+                    return;
+                }
+                // 弹窗打开时其他快捷键无效
+                return;
+            }
+
+            // ── 规则浮层打开时，优先处理浮层快捷键，阻止游戏快捷键 ──
+            if (document.getElementById('ruleOverlay').classList.contains('open')) {
+                if (e.key === 'Escape' || e.key.toLowerCase() === 'g') {
+                    e.preventDefault();
+                    this.toggleRuleOverlay(false);
+                    return;
+                }
+                const list = document.getElementById('ruleOverlayList');
+                if (list) {
+                    const k = e.key.toLowerCase();
+                    const btn = list.querySelector(`.ro-rule-btn[data-key="${k}"]`);
+                    if (btn) { e.preventDefault(); btn.click(); return; }
+                }
+                return; // 浮层打开时阻止所有其他游戏快捷键
+            }
+
+            if (e.key.toLowerCase() === 'g') { e.preventDefault(); this.toggleRuleOverlay(); return; }
+            if (e.key === 'Escape') { game.toggleFocus(false); return; }
+
             if (!game.state.active) return;
             if(e.key==='ArrowLeft') game.submit('Left');
             if(e.key==='ArrowRight') game.submit('Right');
             if(e.key.toLowerCase() === 'v') game.verify();
             if(e.key.toLowerCase() === 'f') { e.preventDefault(); game.toggleFocus(); }
             if(e.key.toLowerCase() === 'q') inquiry.trigger();
-            if(e.key === 'Escape') game.toggleFocus(false);
         });
 
         // 自定义猜测输入监听（用于实时解析提示）
         const guessInput = document.getElementById('guessCustomInput');
         const guessSelect = document.getElementById('guessFixedSelect');
         
+        // v12: 回车自动失焦（还原快捷键）
+        guessInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); guessInput.blur(); }
+        });
+
         guessInput.addEventListener('input', () => {
             this.updateGuessParseHint(guessInput.value.trim());
+            // v12: 显示/隐藏清空按钮
+            const clearBtn = document.getElementById('guessClearBtn');
+            if (clearBtn) clearBtn.classList.toggle('visible', guessInput.value.length > 0);
         });
         
         guessSelect.addEventListener('change', () => {
@@ -1946,9 +2333,27 @@ const ui = {
             }
         });
         // 猜测规则选择后自动失去焦点，方便快捷键操作
-        guessSelect.addEventListener('change', function() {
-        this.blur();
-      });
+        guessSelect.addEventListener('change', function() { this.blur(); });
+
+        // 手动模式点数数字输入框
+        const rankNumInput = document.getElementById('rankNumInput');
+        rankNumInput.addEventListener('input', () => {
+            let v = parseInt(rankNumInput.value, 10);
+            if (isNaN(v)) return;
+            v = Math.max(1, Math.min(13, v));
+            game.selection.rank = v;
+            ui.render();
+        });
+        rankNumInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); rankNumInput.blur(); }
+        });
+
+        // v12: 自动存档检测与恢复
+        this.checkAndRestoreSession();
+        
+        // v12: 初始化焦点陷阱管理
+        this._focusTrapHandler = null;
+        this._currentModal = null;
     },
 
     bindEvents() {
@@ -1956,10 +2361,74 @@ const ui = {
         document.getElementById('newExpBtn').addEventListener('click', () => this.openConfig());
         document.getElementById('helpBtn').addEventListener('click', () => this.openHelp());
         document.getElementById('configHelpBtn').addEventListener('click', () => this.openHelp());
-        document.getElementById('startBtn').addEventListener('click', () => game.start());
+        document.getElementById('startBtn').addEventListener('click', () => {
+            // v12: 启动按钮加载态
+            const btn = document.getElementById('startBtn');
+            btn.textContent = '⏳ 加载中...';
+            btn.disabled = true;
+            setTimeout(() => {
+                game.start();
+                btn.textContent = '启动实验';
+                btn.disabled = false;
+            }, 100);
+        });
         document.getElementById('checkCustom').addEventListener('change', (e) => this.toggleCustomUI(e.target.checked));
         document.getElementById('checkNoise').addEventListener('change', (e) => this.toggleNoiseModeVis(e.target.checked));
+        document.getElementById('noiseModeSelect').addEventListener('change', (e) => {
+            const inlineSel = document.getElementById('noiseModeInline');
+            if (inlineSel) inlineSel.value = e.target.value;
+        });
         document.getElementById('selectAllRules').addEventListener('click', () => this.selectAllRules());
+
+        // v12: 快捷预设配置按钮（匹配4个阶段）
+        document.getElementById('presetBtn1').addEventListener('click', () => {
+            document.getElementById('checkCustom').checked = false;
+            this.toggleCustomUI(false);
+            document.getElementById('phaseSelect').value = '1';
+            document.getElementById('checkWild').checked = false;
+            document.getElementById('checkDynamic').checked = false;
+            document.getElementById('goalSelect').value = 'switch_5';
+            document.getElementById('checkNoise').checked = false;
+            this.toggleNoiseModeVis(false);
+            document.getElementById('checkAuto').checked = true;
+            document.getElementById('startBtn').click();
+        });
+        document.getElementById('presetBtn2').addEventListener('click', () => {
+            document.getElementById('checkCustom').checked = false;
+            this.toggleCustomUI(false);
+            document.getElementById('phaseSelect').value = '2';
+            document.getElementById('checkWild').checked = false;
+            document.getElementById('checkDynamic').checked = false;
+            document.getElementById('goalSelect').value = 'switch_5';
+            document.getElementById('checkNoise').checked = false;
+            this.toggleNoiseModeVis(false);
+            document.getElementById('checkAuto').checked = true;
+            document.getElementById('startBtn').click();
+        });
+        document.getElementById('presetBtn3').addEventListener('click', () => {
+            document.getElementById('checkCustom').checked = false;
+            this.toggleCustomUI(false);
+            document.getElementById('phaseSelect').value = '3';
+            document.getElementById('checkWild').checked = false;
+            document.getElementById('checkDynamic').checked = false;
+            document.getElementById('goalSelect').value = 'switch_5';
+            document.getElementById('checkNoise').checked = false;
+            this.toggleNoiseModeVis(false);
+            document.getElementById('checkAuto').checked = true;
+            document.getElementById('startBtn').click();
+        });
+        document.getElementById('presetBtn4').addEventListener('click', () => {
+            document.getElementById('checkCustom').checked = false;
+            this.toggleCustomUI(false);
+            document.getElementById('phaseSelect').value = '4';
+            document.getElementById('checkWild').checked = true;
+            document.getElementById('checkDynamic').checked = true;
+            document.getElementById('goalSelect').value = 'switch_5';
+            document.getElementById('checkNoise').checked = false;
+            this.toggleNoiseModeVis(false);
+            document.getElementById('checkAuto').checked = true;
+            document.getElementById('startBtn').click();
+        });
 
         // 游戏控制
         document.getElementById('modeBtn').addEventListener('click', () => game.toggleAutoMode());
@@ -1969,8 +2438,112 @@ const ui = {
         document.getElementById('trendBtn').addEventListener('click', () => this.showHistory());
         document.getElementById('focusBtn').addEventListener('click', () => game.toggleFocus());
         document.getElementById('inquiryBtn').addEventListener('click', () => inquiry.trigger());
-        document.getElementById('endBtn').addEventListener('click', () => game.end());
+
+        // v12优化: 确认状态模式结束（3秒内再点确认）
+        let _endConfirmTimer = null;
+        document.getElementById('endBtn').addEventListener('click', () => {
+            const btn = document.getElementById('endBtn');
+            if (_endConfirmTimer) {
+                clearTimeout(_endConfirmTimer);
+                _endConfirmTimer = null;
+                btn.textContent = '⏹ 结束';
+                btn.style.color = '#e74c3c';
+                btn.style.borderColor = '#e74c3c';
+                btn.style.background = '';
+                game.end();
+            } else {
+                btn.textContent = '⏹ 再点确认';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#e74c3c';
+                btn.style.background = '#c0392b';
+                _endConfirmTimer = setTimeout(() => {
+                    btn.textContent = '⏹ 结束';
+                    btn.style.color = '#e74c3c';
+                    btn.style.borderColor = '#e74c3c';
+                    btn.style.background = '';
+                    _endConfirmTimer = null;
+                }, 3000);
+            }
+        });
+        // 全局暴露定时器给game.end使用
+        ui._endConfirmTimer = () => _endConfirmTimer;
+        ui._clearEndConfirm = () => {
+            if (_endConfirmTimer) { clearTimeout(_endConfirmTimer); _endConfirmTimer = null; }
+            const btn = document.getElementById('endBtn');
+            if (btn) { btn.textContent = '⏹ 结束'; btn.style.color = '#e74c3c'; btn.style.borderColor = '#e74c3c'; btn.style.background = ''; }
+        };
+
         document.getElementById('exitFocusHint').addEventListener('click', () => game.toggleFocus());
+
+        // 噪声强度实时切换
+        document.getElementById('noiseModeInline').addEventListener('change', (e) => {
+            if (game.state.config) {
+                game.state.config.noiseMode = e.target.value;
+                const cfgSel = document.getElementById('noiseModeSelect');
+                if (cfgSel) cfgSel.value = e.target.value;
+            }
+            e.target.blur(); // v12: 选择后自动失焦
+        });
+
+        // 恢复默认配置
+        document.getElementById('resetConfigBtn').addEventListener('click', () => {
+            document.getElementById('checkCustom').checked = false;
+            this.toggleCustomUI(false);
+            document.getElementById('phaseSelect').value = '1';
+            document.getElementById('checkWild').checked = false;
+            document.getElementById('checkDynamic').checked = false;
+            document.getElementById('goalSelect').value = 'switch_5';
+            document.getElementById('checkNoise').checked = false;
+            this.toggleNoiseModeVis(false);
+            document.getElementById('checkAuto').checked = true;
+            document.getElementById('checkKeyHints').checked = false;
+            this.applyKeyHintsSetting(false);
+            const btn = document.getElementById('resetConfigBtn');
+            const orig = btn.textContent;
+            btn.textContent = '✓ 已重置';
+            btn.style.color = '#27ae60';
+            setTimeout(() => { btn.textContent = orig; btn.style.color = '#888'; }, 1500);
+        });
+
+        // v12: 猜测清空按钮
+        document.getElementById('guessClearBtn').addEventListener('click', () => {
+            const inp = document.getElementById('guessCustomInput');
+            inp.value = '';
+            document.getElementById('guessClearBtn').classList.remove('visible');
+            document.getElementById('guessParseHint').style.display = 'none';
+            inp.focus();
+        });
+
+        // v12: 专注模式猜测状态条
+        const fgBar = document.getElementById('focusGuessBar');
+        const fgPanel = document.getElementById('focusGuessPanel');
+        const fgSelect = document.getElementById('focusGuessSelect');
+        fgBar.addEventListener('click', (e) => {
+            if (e.target === fgSelect || fgSelect.contains(e.target)) return;
+            const isOpen = fgPanel.classList.toggle('open');
+            fgBar.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+        fgBar.addEventListener('keydown', (e) => { 
+            if (e.key === 'Enter' || e.key === ' ') {
+                const isOpen = fgPanel.classList.toggle('open');
+                fgBar.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
+        });
+        fgSelect.addEventListener('change', () => {
+            const val = fgSelect.value;
+            if (val) {
+                document.getElementById('guessFixedSelect').value = val;
+                document.getElementById('guessCustomInput').value = '';
+                // v12: 立即更新专注模式状态条
+                const fgVal = document.getElementById('focusGuessVal');
+                if (fgVal) fgVal.textContent = val;
+            }
+            fgPanel.classList.remove('open');
+            fgSelect.blur();
+        });
+        document.addEventListener('click', (e) => {
+            if (!fgBar.contains(e.target)) fgPanel.classList.remove('open');
+        });
 
         // 花色选择
         ['H', 'D', 'S', 'C'].forEach(s => {
@@ -1993,6 +2566,9 @@ const ui = {
         document.getElementById('exportCsvBtn').addEventListener('click', () => report.exportCSV());
         document.getElementById('importFileInput').addEventListener('change', (e) => report.importHistory(e.target));
         document.getElementById('clearHistoryBtn').addEventListener('click', () => report.clearHistory());
+
+        // v12: G键浮层
+        this.buildRuleOverlay();
     },
 
     // v11.0: 更新猜测解析提示
@@ -2033,9 +2609,13 @@ const ui = {
         
         game.logSystem('⚠️ 注意：连续多次定势错误，请尝试打破旧规则惯性！');
         
-        setTimeout(() => {
+        // 清除之前的定时器，防止动画提前终止
+        if (game.state.persevTimer) clearTimeout(game.state.persevTimer);
+        
+        game.state.persevTimer = setTimeout(() => {
             leftZone.classList.remove('persev-alert');
             rightZone.classList.remove('persev-alert');
+            game.state.persevTimer = null;
         }, 2000);
     },
 
@@ -2051,16 +2631,82 @@ const ui = {
         perEl.style.color = perCount === 0 ? '#27ae60' : (perCount < 3 ? '#e67e22' : '#e74c3c');
         // 噪声模式状态指示
         const noiseRow = document.getElementById('noiseStatusRow');
-        const noiseEl  = document.getElementById('dispNoiseMode');
         if (game.state.config && game.state.config.noise) {
             noiseRow.style.display = 'flex';
-            const modeMap = { directional: '方向提示 ✅?', neutral: '中性提示 ？', none: '纯噪声 ⚠️' };
-            const modeLabel = modeMap[game.state.config.noiseMode || 'directional'] || '--';
-            noiseEl.innerText = modeLabel;
-            noiseEl.style.color = '#f39c12';
+            const inlineSel = document.getElementById('noiseModeInline');
+            if (inlineSel) inlineSel.value = game.state.config.noiseMode || 'directional';
         } else {
             noiseRow.style.display = 'none';
         }
+
+        // v12: 训练目标进度
+        const goal = game.state.config ? game.state.config.goal : null;
+        const gpRow = document.getElementById('goalProgressRow');
+        const gpBar = document.getElementById('goalProgressBar');
+        const gpBarWrap = document.getElementById('goalProgressBarWrap');
+        const gpVal = document.getElementById('goalProgressVal');
+        const gpLabel = document.getElementById('goalProgressLabel');
+        if (goal && goal !== 'none' && game.state.active) {
+            gpRow.style.display = 'flex';
+            gpBarWrap.style.display = 'block';
+            const total = logs.filter(l => !l.isVerify).length;
+            const correct = logs.filter(l => l.realCorrect && !l.isVerify).length;
+            if (goal === 'switch_5') {
+                const pct = Math.min(100, (switchCount / 5) * 100);
+                gpLabel.textContent = '目标：5次切换';
+                gpVal.textContent = `${switchCount}/5`;
+                gpBar.style.width = pct + '%';
+                if (pct >= 100 && !this._goalAnnounced) { this._goalAnnounced = true; this.announce('恭喜，训练目标已达成！'); }
+            } else if (goal === 'acc_80') {
+                const acc = total ? (correct / total * 100) : 0;
+                const pct = Math.min(100, acc / 80 * 100);
+                gpLabel.textContent = '目标：正确率≥80%';
+                gpVal.textContent = total ? (acc.toFixed(0) + '%') : '--';
+                gpBar.style.width = pct + '%';
+                if (pct >= 100 && !this._goalAnnounced) { this._goalAnnounced = true; this.announce('恭喜，正确率目标已达成！'); }
+            } else if (goal === 'adapt_2s') {
+                // v12: 改为"连续3次适应<2s"或"最近5次中至少4次<2s"才判定完成
+                const recent = game.state.recentAdaptTimes;
+                let goalAchieved = false;
+
+                if (recent.length >= 3) {
+                    // 检查最近3次是否都<2s
+                    const last3 = recent.slice(-3);
+                    const all3Under2s = last3.every(d => d < 2000);
+
+                    // 或最近5次中至少4次<2s
+                    let under2sCount = recent.filter(d => d < 2000).length;
+                    const atLeast4of5 = recent.length >= 5 && under2sCount >= 4;
+
+                    goalAchieved = all3Under2s || atLeast4of5;
+                }
+
+                // 计算显示用的平均值
+                const adapts = game.state.adaptTimes;
+                const avgT = adapts.length ? (adapts.reduce((a,b)=>a+b.duration,0)/adapts.length/1000) : null;
+                gpLabel.textContent = '目标：连续3次适应<2s';
+                gpVal.textContent = avgT != null ? avgT.toFixed(1) + 's' : '--';
+
+                // 进度条显示最近3次中有多少次<2s
+                const last3Under2s = recent.slice(-3).filter(d => d < 2000).length;
+                const pct = Math.min(100, (last3Under2s / 3) * 100);
+                gpBar.style.width = pct + '%';
+
+                if (goalAchieved && !this._goalAnnounced) {
+                    this._goalAnnounced = true;
+                    this.announce('恭喜，适应时间目标已达成！');
+                }
+            }
+        } else {
+            gpRow.style.display = 'none';
+            gpBarWrap.style.display = 'none';
+        }
+
+        // v12: 专注模式猜测状态条同步
+        const currentGuessText = game.getCurrentGuess ? game.getCurrentGuess() : '';
+        const fgVal = document.getElementById('focusGuessVal');
+        if (fgVal) fgVal.textContent = currentGuessText === '(未猜)' ? '未猜' : currentGuessText;
+
         if (!game.state.autoMode) this.highlightSelectors();
     },
 
@@ -2129,11 +2775,38 @@ const ui = {
 
     addLogEntry(l, rt) {
         const box = document.getElementById('logBox');
+        const atTop = box.scrollTop <= 10;
         let icon = l.displayCorrect ? '✅' : '❌';
         if (l.isNoised) icon += '🌪️';
         if (l.isPerseverative) icon += '🔒';
-        const html = `<div class="log-item"><span style="color:#666">#${l.turn}</span><span style="font-weight:bold; width:50px;">${l.cardStr || '-'}</span><span>${l.userDir==='Left'?'⬅':'➡'}</span><span>${icon}</span><span style="font-size:0.75rem; color:#888;">${Math.round(rt)}ms</span></div>`;
+        // v12: HH:MM 时间戳
+        const now = new Date();
+        const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        const html = `<div class="log-item"><span style="color:#555;font-size:0.7rem;">${ts}</span><span style="color:#666">#${l.turn}</span><span style="font-weight:bold; width:50px;">${l.cardStr || '-'}</span><span>${l.userDir==='Left'?'⬅':'➡'}</span><span>${icon}</span><span style="font-size:0.75rem; color:#888;">${Math.round(rt)}ms</span></div>`;
         box.innerHTML = html + box.innerHTML;
+        if (atTop) box.scrollTop = 0;
+
+        // v12: 虚拟滚动 - 限制DOM节点数量，保留最近N条
+        const maxNodes = game.state.maxLogDomNodes || 200;
+        const logItems = box.querySelectorAll('.log-item');
+        if (logItems.length > maxNodes) {
+            // 移除底部（最旧）的节点
+            for (let i = maxNodes; i < logItems.length; i++) {
+                logItems[i].remove();
+            }
+        }
+
+        // v12: 触觉反馈（移动端）
+        if ('vibrate' in navigator) navigator.vibrate(l.displayCorrect ? 10 : [15, 10, 15]);
+        // v12: 屏幕阅读器通知
+        this.announce(l.displayCorrect ? '正确' : l.isPerseverative ? '错误，注意思维定势' : '错误');
+    },
+
+    announce(text) {
+        const sr = document.getElementById('srAnnounce');
+        if (!sr) return;
+        sr.textContent = '';
+        requestAnimationFrame(() => { sr.textContent = text; });
     },
 
     updateLastRt(ms) {
@@ -2144,6 +2817,29 @@ const ui = {
 
     updateVerifyBtn(active) {
          // 不做任何事，保持按钮常亮
+    },
+
+    // v12.0: 验证提示浮层（含边界检测，防止移动端裁剪）
+    showVerifyHint(text) {
+        const toast = document.getElementById('verifyToast');
+        const btn = document.getElementById('verifyBtn');
+        if (!toast || !btn) return;
+        toast.textContent = text;
+        toast.classList.add('show');
+        requestAnimationFrame(() => {
+            const rect = btn.getBoundingClientRect();
+            const toastW = toast.offsetWidth;
+            const toastH = toast.offsetHeight;
+            const winW = window.innerWidth;
+            let left = rect.left + rect.width / 2 - toastW / 2;
+            left = Math.max(8, Math.min(left, winW - toastW - 8));
+            let top = rect.top - toastH - 8;
+            if (top < 8) top = rect.bottom + 8;
+            toast.style.left = left + 'px';
+            toast.style.top = top + 'px';
+        });
+        clearTimeout(this._verifyToastTimer);
+        this._verifyToastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
     },
     
     updateDifficulty() {
@@ -2158,14 +2854,238 @@ const ui = {
         document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`s_${game.selection.suit}`).classList.add('active');
         document.getElementById(`r_${game.selection.rank}`).classList.add('active');
+        const ri = document.getElementById('rankNumInput');
+        if (ri && document.activeElement !== ri) ri.value = game.selection.rank;
     },
 
-    openConfig() { document.getElementById('configModal').style.display = 'flex'; },
-    openHelp() { document.getElementById('helpModal').style.display = 'flex'; },
-    showHistory() { document.getElementById('historyModal').style.display = 'flex'; report.drawHistoryChart(); report.renderHistorySummary(); },
-    closeModal(id) { document.getElementById(id).style.display = 'none'; },
+    openConfig() {
+        this._lastFocused = document.activeElement;
+        const modal = document.getElementById('configModal');
+        modal.style.display = 'flex';
+        this._currentModal = 'configModal';
+        setTimeout(() => {
+            const first = modal.querySelector('button, input, select, [tabindex]:not([tabindex="-1"])');
+            if (first) first.focus();
+        }, 50);
+        // v12: 启用焦点陷阱
+        this._enableFocusTrap(modal);
+    },
+    openHelp() {
+        this._lastFocused = document.activeElement;
+        const modal = document.getElementById('helpModal');
+        modal.style.display = 'flex';
+        this._currentModal = 'helpModal';
+        setTimeout(() => {
+            const closeBtn = document.getElementById('closeHelpBtn');
+            if (closeBtn) closeBtn.focus();
+        }, 50);
+        // v12: 启用焦点陷阱
+        this._enableFocusTrap(modal);
+    },
+    showHistory() {
+        this._lastFocused = document.activeElement;
+        const modal = document.getElementById('historyModal');
+        modal.style.display = 'flex';
+        this._currentModal = 'historyModal';
+        report.drawHistoryChart();
+        report.renderHistorySummary();
+        setTimeout(() => {
+            const closeBtn = document.getElementById('closeHistoryModal');
+            if (closeBtn) closeBtn.focus();
+        }, 50);
+        // v12: 启用焦点陷阱
+        this._enableFocusTrap(modal);
+    },
+    closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+        // v12: 移除焦点陷阱
+        this._disableFocusTrap();
+        this._currentModal = null;
+        if (this._lastFocused && document.contains(this._lastFocused)) {
+            this._lastFocused.focus();
+        }
+        this._lastFocused = null;
+    },
     formatCard(s, r) { return `${{H:'♥',D:'♦',S:'♠',C:'♣'}[s]}${this.formatRank(r)}`; },
-    formatRank(r) { return {1:'A',11:'J',12:'Q',13:'K'}[r] || r; }
+    formatRank(r) { return {1:'A',11:'J',12:'Q',13:'K'}[r] || r; },
+
+    // v12: 焦点陷阱 - 启用
+    _enableFocusTrap(modalElement) {
+        this._disableFocusTrap(); // 先清除旧的
+
+        const getFocusableElements = () => {
+            return Array.from(modalElement.querySelectorAll(
+                'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])'
+            )).filter(el => !el.disabled && el.offsetParent !== null);
+        };
+
+        this._focusTrapHandler = (e) => {
+            if (e.key !== 'Tab') return;
+
+            const focusableElements = getFocusableElements();
+            if (focusableElements.length === 0) return;
+
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            if (e.shiftKey) {
+                // Shift+Tab: 如果在第一个元素，则跳到最后一个
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                // Tab: 如果在最后一个元素，则跳到第一个
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+
+        modalElement.addEventListener('keydown', this._focusTrapHandler);
+    },
+
+    // v12: 焦点陷阱 - 禁用
+    _disableFocusTrap() {
+        if (this._focusTrapHandler && this._currentModal) {
+            const modal = document.getElementById(this._currentModal);
+            if (modal) {
+                modal.removeEventListener('keydown', this._focusTrapHandler);
+            }
+        }
+        this._focusTrapHandler = null;
+    },
+
+    // v12: G键规则选择浮层
+    buildRuleOverlay() {
+        const list = document.getElementById('ruleOverlayList');
+        if (!list) return;
+        const KEYS = ['1','2','3','4','5','6','7','8','9','0','Q','W','E','R','T'];
+        const allRules = [
+            ...Object.entries(BASE_RULES).map(([id, def]) => ({ id: Number(id), name: def.name, wild: false })),
+            ...Object.entries(WILDCARD_RULES).map(([id, def]) => ({ id: Number(id), name: def.name, wild: true }))
+        ];
+        list.innerHTML = '';
+        allRules.forEach((rule, i) => {
+            const key = KEYS[i] || '';
+            const btn = document.createElement('button');
+            btn.className = `ro-rule-btn${rule.wild ? ' wild' : ''}`;
+            btn.innerHTML = `<span class="ro-key">${key}</span>${rule.wild ? '🃏 ' : ''}${rule.name}`;
+            btn.dataset.value = rule.name;
+            btn.dataset.key = key.toLowerCase();
+            btn.addEventListener('click', () => this.applyRuleFromOverlay(rule.name));
+            list.appendChild(btn);
+        });
+        // 注：浮层键盘快捷键由全局keydown统一处理，无需重复绑定
+    },
+
+    toggleRuleOverlay(forceOpen) {
+        const overlay = document.getElementById('ruleOverlay');
+        const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !overlay.classList.contains('open');
+        overlay.classList.toggle('open', shouldOpen);
+        if (shouldOpen) {
+            const firstBtn = document.querySelector('.ro-rule-btn');
+            if (firstBtn) firstBtn.focus();
+        }
+    },
+
+    applyRuleFromOverlay(ruleName) {
+        const sel = document.getElementById('guessFixedSelect');
+        const inp = document.getElementById('guessCustomInput');
+        if (sel) sel.value = ruleName;
+        if (inp) inp.value = '';
+        document.getElementById('guessParseHint').style.display = 'none';
+        // v12: 同步专注模式下拉面板 #focusGuessSelect
+        const fgSelect = document.getElementById('focusGuessSelect');
+        if (fgSelect) fgSelect.value = ruleName;
+        // Sync focus bar display
+        const fgVal = document.getElementById('focusGuessVal');
+        if (fgVal) fgVal.textContent = ruleName;
+        this.toggleRuleOverlay(false);
+        game.logSystem(`✏️ 猜测已更新：${ruleName}`);
+    },
+
+    // v12: 自动存档
+    saveSession() {
+        if (!game.state.active) return;
+        try {
+            const snap = {
+                config: game.state.config,
+                pool: game.state.pool,
+                usedPool: game.state.usedPool,
+                currentRule: game.state.currentRule,
+                previousRule: game.state.previousRule,
+                streak: game.state.streak,
+                thresholdBase: game.state.thresholdBase,
+                currentThreshold: game.state.currentThreshold,
+                logs: game.state.logs,
+                turn: game.state.turn,
+                lastCard: game.state.lastCard,
+                switchTime: game.state.switchTime,
+                adaptTimes: game.state.adaptTimes,
+                autoMode: game.state.autoMode,
+                consecutivePersevCount: game.state.consecutivePersevCount,
+                dynamicRulesData: Object.entries(game.state.dynamicRules || {}).map(([id, r]) => ({
+                    id, name: r.name, isDynamic: true, needsCtx: r.needsCtx
+                })),
+                savedAt: Date.now()
+            };
+            localStorage.setItem('wcst_session_snap', JSON.stringify(snap));
+        } catch(e) { /* ignore quota errors */ }
+    },
+
+    checkAndRestoreSession() {
+        try {
+            const raw = localStorage.getItem('wcst_session_snap');
+            if (!raw) return;
+            const snap = JSON.parse(raw);
+            // Only restore if saved within 2 hours and has real data
+            if (!snap.logs || snap.logs.length < 3) { localStorage.removeItem('wcst_session_snap'); return; }
+            if (Date.now() - snap.savedAt > 7200000) { localStorage.removeItem('wcst_session_snap'); return; }
+            if (!confirm(`检测到上次未完成的训练（${snap.logs.filter(l=>!l.isVerify).length} 回合）。是否恢复？\n点击"取消"开始全新实验。`)) {
+                localStorage.removeItem('wcst_session_snap');
+                return;
+            }
+            // Restore dynamic rules
+            const dynRules = {};
+            (snap.dynamicRulesData || []).forEach(r => {
+                dynRules[r.id] = { id: r.id, name: r.name, isDynamic: true, needsCtx: r.needsCtx, func: () => 'Right' };
+            });
+            game.state = {
+                active: true,
+                config: snap.config,
+                pool: snap.pool,
+                usedPool: snap.usedPool,
+                currentRule: snap.currentRule,
+                previousRule: snap.previousRule,
+                streak: snap.streak,
+                thresholdBase: snap.thresholdBase,
+                currentThreshold: snap.currentThreshold,
+                logs: snap.logs,
+                turn: snap.turn,
+                lastCard: snap.lastCard,
+                switchTime: snap.switchTime,
+                adaptTimes: snap.adaptTimes,
+                verifyMode: false,
+                autoCard: { suit: 'H', rank: 1 },
+                autoMode: snap.autoMode,
+                lastActionTime: performance.now(),
+                dynamicRules: dynRules,
+                consecutivePersevCount: snap.consecutivePersevCount || 0,
+                persevTimer: null
+            };
+            ui.closeModal('configModal');
+            ui.toggleAutoUI(snap.autoMode);
+            ui.applyKeyHintsSetting(snap.config.keyHints);
+            if (snap.autoMode) game.dealCard();
+            document.getElementById('logBox').innerHTML = '';
+            game.logSystem('▶ 已恢复上次训练。');
+            ui.render();
+        } catch(e) {
+            localStorage.removeItem('wcst_session_snap');
+        }
+    },
 };
 
 const report = {
@@ -2244,7 +3164,17 @@ const report = {
         let goalMet = false;
         if(g==='switch_5' && logs.filter(l=>l.isSwitch).length >= 5) goalMet = true;
         if(g==='acc_80' && acc >= 80) goalMet = true;
-        if(g==='adapt_2s' && avgTime < 2 && adapts.length>0) goalMet = true;
+        // v12: adapt_2s目标改为"连续3次<2s"或"最近5次中至少4次<2s"
+        if(g==='adapt_2s') {
+            const recent = game.state.recentAdaptTimes || [];
+            if (recent.length >= 3) {
+                const last3 = recent.slice(-3);
+                const all3Under2s = last3.every(d => d < 2000);
+                const under2sCount = recent.filter(d => d < 2000).length;
+                const atLeast4of5 = recent.length >= 5 && under2sCount >= 4;
+                goalMet = all3Under2s || atLeast4of5;
+            }
+        }
         if(g==='none') goalMet = true;
 
         // ── 弱规则自动提醒 (v10.8) ──
@@ -2377,10 +3307,22 @@ const report = {
         });
 
         let auditRows = '';
+        // XSS 修复：转义用户输入的 HTML 特殊字符
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        // v12: 性能优化 — 使用数组join代替字符串拼接
+        const auditChunks = [];
         logs.forEach(l => {
             const r = game.getRuleDef(l.ruleId);
             const rPfx = r.isDynamic ? '🔄' : (r.isWild ? '🃏' : '');
-            auditRows += `<tr>
+            auditChunks.push(`<tr>
                 <td>${l.turn}</td>
                 <td>${l.cardStr || '-'}</td>
                 <td>${l.userDir}</td>
@@ -2391,9 +3333,10 @@ const report = {
                 <td>${l.isPerseverative?'🔒':''}</td>
                 <td>${l.isSwitch?'⚡':''}</td>
                 <td>${Math.round(l.rt)}ms</td>
-                <td style="max-width:150px; word-break:break-all; color:#8e44ad;">${l.userGuess || ''}</td>
-            </tr>`;
+                <td style="max-width:150px; word-break:break-all; color:#8e44ad;">${escapeHtml(l.userGuess)}</td>
+            </tr>`);
         });
+        auditRows = auditChunks.join('');
 
         const perColor = perRate > 30 ? '#e74c3c' : (perRate > 15 ? '#e67e22' : '#27ae60');
         const accColor = acc >= 75 ? '#27ae60' : (acc >= 50 ? '#e67e22' : '#e74c3c');
@@ -2466,6 +3409,7 @@ const report = {
                 <div style="margin-top:10px; max-height:200px; overflow-y:auto;">${switchHtml}</div>
                 
                 <h3>📋 审计日志 <small style="font-weight:normal; font-size:0.78rem; color:#999;">🌪️噪声 🔒持续性错误 ⚡切换点</small></h3>
+                <div class="audit-scroll-hint">← 滑动查看更多 →</div>
                 <div style="max-height:200px; overflow-y:auto; overflow-x:auto; border:1px solid #eee;">
                     <table class="data-table">
                         <thead><tr><th>R</th><th>Card</th><th>Dir</th><th>Rule</th><th>Real</th><th>Disp</th><th>Noise</th><th>Persev</th><th>Switch</th><th>RT</th><th>我的猜测</th></tr></thead>
@@ -2678,15 +3622,26 @@ const report = {
 
 const inquiry = {
     trigger() {
+        const modal = document.getElementById('inquiryModal');
+        // v12: 如果弹窗已打开，则关闭（开关模式）
+        if (modal.style.display === 'flex') {
+            this.close();
+            return;
+        }
+        // 否则尝试打开：需要实验激活且有日志
         if (!game.state.active) return;
-        const last = game.state.logs[game.state.logs.length - 1]; if(!last) return;
+        const last = game.state.logs[game.state.logs.length - 1];
+        if (!last) return;
         const rule = game.getRuleDef(last.ruleId);
         document.getElementById('inquiryContent').innerText = 
 `回合：${last.turn}
 牌面：${last.cardStr || '-'}
 规则：${rule.name}
 判定：${last.realCorrect ? '正确' : '错误'} ${last.isNoised ? '(噪声干扰)' : ''}`;
-        document.getElementById('inquiryModal').style.display = 'flex';
+        modal.style.display = 'flex';
+    },
+    close() {
+        ui.closeModal('inquiryModal');
     },
     reportError() { alert("已记录系统偏差。"); ui.closeModal('inquiryModal'); }
 };
